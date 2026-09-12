@@ -97,3 +97,21 @@ Review the 60-second quote, check the confirmation box, then click **Sign and bu
 A browser journal and per-wallet Web Lock prevent concurrent submissions and replay of the same quote. A timeout after dispatch is UNKNOWN and blocks further purchases; it is never automatically retried. Inspect the saved client order IDs in exchange history. Automated reconciliation and recovery are still pending. The journal is local to this browser and origin, not shared across devices. Clearing browser data removes this protection. No private key, API-agent permission, automatic purchase or scheduler is created.
 
 Tests use mocked signing/network responses; no real wallet signatures or purchases are performed during validation.
+
+## Local API agent (stage 3)
+
+In **DCA setup**, connect the master wallet, then **Prepare local agent**. This creates a dedicated key locally; it does not register permissions or start purchases. Review the public address and seven-day expiry, then explicitly select **Approve agent in wallet**. **Refresh authorization** reads `extraAgents` using the master address and verifies registration. The worker is not connected yet.
+
+Agent trading permission is broader than a DCA plan. Spot-only rules, budget limits and scheduling are application controls, not exchange-enforced restrictions on that key. Revocation is performed in Hyperliquid's API settings. A previously observed revoked agent or an expired agent is blocked; future rotation must create a fresh key, never reuse a pruned address.
+
+The server stores keys in `/app/.agent-data` with file mode 0600 and returns only public metadata. Development uses the ignored source directory; production must mount a dedicated persistent volume:
+
+```sh
+docker run -d --name dca-ai-production --restart unless-stopped \
+  -p 127.0.0.1:3101:3000 --env-file .env \
+  -v dca-ai-agent-data:/app/.agent-data dca-ai:0.3.1
+```
+
+Do not delete the volume during container updates. Development and production have separate agent stores. This local single-user endpoint requires a matching loopback Origin and is not a multi-user authentication system. Keys are not encrypted at rest; protect the Docker host and its backups. Agent files are excluded from Git and Docker build context. No agent private key is returned to the browser, voice model or GitHub.
+
+References: [Hyperliquid API wallets and nonce lifecycle](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/nonces-and-api-wallets), [agent authorization](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint#approve-an-api-wallet).

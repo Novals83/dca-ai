@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { discoverWallets, walletAddress, type Wallet } from "@/lib/wallet/provider";
 import { loadPlan, savePlan, planSchema, planSummary, type DCAPlan } from "@/lib/dca/schedule";
 import { Button } from "@/components/ui/button";
+import { AgentPanel } from "./agent";
 import { PurchasePanel } from "./purchase";
 import { money } from "@/lib/format";
 
@@ -95,7 +96,8 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
         <Button type="submit" disabled={!parsed.success}>{saved ? "Draft saved" : "Save DCA draft"}</Button>
         <p className="small muted">Saved only in this browser, separately for each wallet. A wallet connection is not proof of trading authorization. No purchases are running.</p>
       </form>
-      <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />
+      <AgentPanel key={connected.address} account={connected.address} provider={connected.wallet.provider} />
+          <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />
     </>}
     {error && <p className="error" role="alert">{error}</p>}
   </section>;
