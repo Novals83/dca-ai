@@ -1,0 +1,149 @@
+import { z } from "zod";
+import { info, addressSchema } from "./client";
+import { getAllMids, getSpotMeta, spotPrice } from "./market";
+import {
+  perpSchema,
+  spotSchema,
+  ordersSchema,
+  fillsSchema,
+  type PerpState,
+  type SpotState,
+  type SpotMeta,
+  type Portfolio,
+  type Position,
+} from "./types";
+import { calculateEffectiveLeverage } from "../dca/simulator";
+export const getPerpState = (user: string) =>
+  info(
+    { type: "clearinghouseState", user: addressSchema.parse(user) },
+    perpSchema,
+  );
+export const getSpotState = (user: string) =>
+  info(
+    { type: "spotClearinghouseState", user: addressSchema.parse(user) },
+    spotSchema,
+  );
+export const getOpenOrders = (user: string) =>
+  info({ type: "openOrders", user: addressSchema.parse(user) }, ordersSchema);
+export const getUserFills = (user: string) =>
+  info({ type: "userFills", user: addressSchema.parse(user) }, fillsSchema);
+export function normalizePortfolio(
+  address: string,
+  perp: PerpState,
+  spot: SpotState,
+  meta: SpotMeta,
+  mids: Record<string, number>,
+): Portfolio {
+  const warnings: string[] = [];
+  const positions: Position[] = perp.assetPositions.flatMap(
+    ({ position: p }) => {
+      if (p.szi === 0) return [];
+      const mark = Math.abs(p.positionValue / p.szi);
+      return [
+        {
+          coin: p.coin,
+          side: p.szi < 0 ? ("short" as const) : ("long" as const),
+          size: Math.abs(p.szi),
+          usdValue: Math.abs(p.positionValue),
+          markPrice: mark,
+          entryPrice: p.entryPx ?? undefined,
+          unrealizedPnl: p.unrealizedPnl,
+          leverage: p.leverage.value,
+        },
+      ];
+    },
+  );
+  let spotValue = 0;
+  let usdcBalance = 0;
+  for (const balance of spot.balances) {
+    if (balance.total === 0) continue;
+    const token = meta.tokens.find((t) => t.index === balance.token);
+    const price = spotPrice(balance.token, meta, mids);
+    if (price === null) {
+      warnings.push(
+        `Unpriced spot token ${balance.coin}: excluded from totals.`,
+      );
+      continue;
+    }
+    const value = balance.total * price;
+    spotValue += value;
+    if (token?.name === "USDC") {
+      usdcBalance += value;
+      continue;
+    }
+    positions.push({
+      coin: token?.name ?? balance.coin,
+      side: "spot",
+      size: balance.total,
+      usdValue: value,
+      markPrice: price,
+    });
+  }
+  const accountValue = perp.marginSummary.accountValue + spotValue;
+  const totalExposure = positions.reduce(
+    (sum, p) => sum + Math.abs(p.usdValue),
+    0,
+  );
+  const exposure = (coin: string) =>
+    positions
+      .filter((p) => p.coin === coin)
+      .reduce(
+        (sum, p) => sum + (p.side === "short" ? -p.usdValue : p.usdValue),
+        0,
+      );
+  warnings.push(
+    "Covers standard main DEX perps and spot only; excludes vaults, staking, other DEXs and linked subaccounts.",
+  );
+  return {
+    address,
+    accountValue,
+    withdrawable: perp.withdrawable,
+    btcExposure: exposure("BTC") + exposure("UBTC"),
+    hypeExposure: exposure("HYPE"),
+    usdcBalance,
+    positions,
+    totalExposure,
+    effectiveLeverage: calculateEffectiveLeverage(totalExposure, accountValue),
+    warnings,
+    source: "live",
+    asOf: new Date().toISOString(),
+    openOrders: [],
+    recentFills: [],
+  };
+}
+export async function getPortfolio(address: string) {
+  addressSchema.parse(address);
+  const mode = await info(
+    { type: "userAbstraction", user: address },
+    z.enum([
+      "unifiedAccount",
+      "portfolioMargin",
+      "disabled",
+      "default",
+      "dexAbstraction",
+    ]),
+  );
+  if (
+    mode === "unifiedAccount" ||
+    mode === "portfolioMargin" ||
+    mode === "dexAbstraction"
+  )
+    throw new Error("Unsupported account mode");
+  const [perp, spot, meta, mids] = await Promise.all([
+    getPerpState(address),
+    getSpotState(address),
+    getSpotMeta(),
+    getAllMids(),
+  ]);
+  const portfolio = normalizePortfolio(address, perp, spot, meta, mids);
+  const [orders, fills] = await Promise.allSettled([
+    getOpenOrders(address),
+    getUserFills(address),
+  ]);
+  if (orders.status === "fulfilled") portfolio.openOrders = orders.value;
+  else portfolio.warnings.push("Open orders unavailable.");
+  if (fills.status === "fulfilled")
+    portfolio.recentFills = fills.value.slice(0, 10);
+  else portfolio.warnings.push("Recent fills unavailable.");
+  return portfolio;
+}

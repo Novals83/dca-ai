@@ -1,5 +1,7 @@
 # DCA AI — Hyperliquid Copilot
 
+[Public repository](https://github.com/Novals83/dca-ai)
+
 Local-first portfolio intelligence and BTC + HYPE accumulation simulations. **No trades, signing, private keys, cron jobs or money movement.** The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
 
 ## Run in a fresh container

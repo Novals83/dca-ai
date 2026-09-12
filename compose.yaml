@@ -1,0 +1,22 @@
+name: dca-ai
+services:
+  web:
+    build:
+      context: .
+      target: dev
+    init: true
+    ports:
+      - "127.0.0.1:3100:3000"
+    volumes:
+      - .:/app
+      - dependencies:/app/node_modules
+      - next-cache:/app/.next
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_REASONING_MODEL: ${OPENAI_REASONING_MODEL:-gpt-5.4-mini}
+      OPENAI_LIVE_MODEL: ${OPENAI_LIVE_MODEL:-gpt-live-1}
+    restart: unless-stopped
+volumes:
+  dependencies:
+  next-cache:
