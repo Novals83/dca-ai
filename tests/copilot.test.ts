@@ -4,7 +4,7 @@ import { getContext } from "../lib/ai/context";
 it("limited fallback does not turn capital into daily spending", async () => {
   const c = await getContext({ account: "demo" });
   expect(
-    localReply("У меня $15 000. Как распределить DCA?", c).preview,
+    localReply("I have $15,000. How should I allocate my DCA?", c).preview,
   ).toBeUndefined();
 });
 it("explicit daily command overrides weekly builder frequency", async () => {

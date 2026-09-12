@@ -308,7 +308,7 @@ export function Workspace({
             href="https://app.hyperliquid.xyz/trade"
             target="_blank"
             rel="noopener noreferrer"
-            title="Открыть Hyperliquid. Для двух панелей: правый клик → Открыть ссылку в разделённом окне"
+            title="Open Hyperliquid. For Split view: right-click → Open link in split view"
           >
             Hyperliquid <ArrowUpRight size={15} />
           </a>
@@ -324,17 +324,16 @@ export function Workspace({
         </div>
       </header>
       <details className="split-view-help">
-        <summary>Как открыть Hyperliquid рядом</summary>
+        <summary>Open Hyperliquid alongside DCA AI</summary>
         <p>
-          В Chrome нажми правой кнопкой на ссылку Hyperliquid сверху и выбери
-          «Открыть ссылку в разделённом окне» (Open link in split view).
-          Если биржа уже открыта, объедини существующие вкладки через меню вкладки.
-          Обычный клик открывает биржу в новой вкладке.
+          In Chrome, right-click the Hyperliquid link above and select
+          “Open link in split view”. If the exchange is already open, combine
+          the existing tabs using the tab menu. A normal click opens a new tab.
         </p>
         <p>
-          Оставь эту пару открытой. Для возвращения после перезапуска Chrome:
-          Настройки → Запуск Chrome → Ранее открытые вкладки.
-          Микрофон включается отдельно кнопкой Start voice.
+          Keep this pair open. To restore your tabs after restarting Chrome:
+          Settings → On startup → Continue where you left off.
+          Start your microphone separately with Start voice.
         </p>
       </details>
       <div className="workspace-layout">

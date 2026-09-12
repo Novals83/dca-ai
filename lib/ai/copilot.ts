@@ -25,10 +25,9 @@ export type CopilotReply = {
   tools: string[];
 };
 export function localReply(message: string, c: CopilotContext): CopilotReply {
-  const ru = /[а-яё]/i.test(message);
   const q = message.toLowerCase();
   const explicitDaily = q.match(
-    /(?:\$\s*)?(\d+(?:[.,]\d+)?)\s*(?:\/day|per day|a day|в день)/,
+    /(?:\$\s*)?(\d+(?:[.,]\d+)?)\s*(?:\/day|per day|a day)/,
   );
   if (explicitDaily || q === "build a btc + hype dca") {
     const amount = explicitDaily?.[1];
@@ -50,33 +49,25 @@ export function localReply(message: string, c: CopilotContext): CopilotReply {
       provider: "local",
       tools: ["simulate_dca", "create_strategy_preview"],
       preview: strategy,
-      text: ru
-        ? `Локальный калькулятор: взносы ${money(result.totalContributions)}, экспозиция ${money(result.effectiveExposure)}. BTC ${strategy.btcAllocation}%, HYPE ${strategy.hypeAllocation}%, ${strategy.leverage}x. Остальные параметры взяты из конструктора. Это сценарий с неизменными ценами, без комиссий. Проверьте предпросмотр перед сохранением.`
-        : `Local calculator: ${money(result.totalContributions)} contributed; ${money(result.effectiveExposure)} exposure. BTC ${strategy.btcAllocation}% / HYPE ${strategy.hypeAllocation}%, ${strategy.leverage}x. Other settings come from the builder. Constant-price scenario, excluding costs. Review the preview before saving.`,
+      text: `Local calculator: ${money(result.totalContributions)} contributed; ${money(result.effectiveExposure)} exposure. BTC ${strategy.btcAllocation}% / HYPE ${strategy.hypeAllocation}%, ${strategy.leverage}x. Other settings come from the builder. Constant-price scenario, excluding costs. Review the preview before saving.`,
     };
   }
-  if (/leverage|risk|плеч|риск/.test(q))
+  if (/leverage|risk/.test(q))
     return {
       provider: "local",
       tools: [],
-      text: ru
-        ? "Плечо увеличивает убытки и риск ликвидации. Даже 1x не делает криптоактивы безопасными. Калькулятор не учитывает ликвидацию, funding и комиссии."
-        : "Leverage amplifies losses and can cause liquidation. Even 1x crypto exposure carries substantial risk. This simulator excludes liquidation, funding and fees.",
+      text: "Leverage amplifies losses and can cause liquidation. Even 1x crypto exposure carries substantial risk. This simulator excludes liquidation, funding and fees.",
     };
-  if (/analy|portfolio|анализ|портфел/.test(q))
+  if (/analy|portfolio/.test(q))
     return {
       provider: "local",
       tools: ["get_portfolio", "calculate_allocation"],
-      text: ru
-        ? `По данным ${c.portfolio.source === "demo" ? "демо" : "Hyperliquid"}: стоимость ${money(c.portfolio.accountValue)}, BTC ${money(c.portfolio.btcExposure)}, HYPE ${money(c.portfolio.hypeExposure)}. Это локальная сводка, не AI-анализ.`
-        : `${c.portfolio.source === "demo" ? "Demo" : "Hyperliquid"} account value: ${money(c.portfolio.accountValue)}. BTC net exposure ${money(c.portfolio.btcExposure)}; HYPE ${money(c.portfolio.hypeExposure)}. ${percent(c.strategy.btcAllocation)} of new contributions are assigned to BTC. This is a local summary, not AI analysis.`,
+      text: `${c.portfolio.source === "demo" ? "Demo" : "Hyperliquid"} account value: ${money(c.portfolio.accountValue)}. BTC net exposure ${money(c.portfolio.btcExposure)}; HYPE ${money(c.portfolio.hypeExposure)}. ${percent(c.strategy.btcAllocation)} of new contributions are assigned to BTC. This is a local summary, not AI analysis.`,
     };
   return {
     provider: "local",
     tools: [],
-    text: ru
-      ? "AI сейчас недоступен. Локально работают сводка портфеля, предпросмотр из конструктора и команда «Simulate $50/day». Для свободного диалога настройте OPENAI_API_KEY."
-      : "AI is unavailable. Local tools support portfolio summaries, risk explanations and “Simulate $50/day”. Configure OPENAI_API_KEY for free-form conversation.",
+    text: "AI is unavailable. Local tools support portfolio summaries, risk explanations and “Simulate $50/day”. Configure OPENAI_API_KEY for free-form conversation.",
   };
 }
 export async function copilot(
