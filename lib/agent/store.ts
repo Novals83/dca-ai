@@ -54,3 +54,26 @@ export function syncAgentExpiry(account:string,address:string,expiresAt:number,d
  writeFileSync(temporary,JSON.stringify({...stored,expiresAt}),{flag:"wx",mode:0o600});
  renameSync(temporary,path);
 }
+
+export function pendingAgent(account:string,create:boolean,expiresAt:number,directory=process.env.AGENT_DATA_DIR || "/app/.agent-data") {
+ const pending=join(directory,"pending");
+ const existing=getAgent(account,false,pending);
+ if(existing || !create)return existing;
+ const candidate=getAgent(account,true,pending)!;
+ // No signature has been requested for this fresh address yet.
+ syncAgentExpiry(account,candidate.address,Math.max(expiresAt,candidate.expiresAt),pending);
+ return getAgent(account,false,pending);
+}
+
+// Caller must hold the account execution lock and verify this exact address on the exchange.
+export function activatePendingAgent(account:string,address:string,validUntil:number|null,directory=process.env.AGENT_DATA_DIR || "/app/.agent-data") {
+ const pending=join(directory,"pending");
+ const candidate=getAgent(account,false,pending);
+ if(!candidate || candidate.address.toLowerCase()!==address.toLowerCase() || candidate.expiresAt<=Date.now() || (validUntil!==null && validUntil<candidate.expiresAt))throw new Error("Replacement authorization is not valid for the requested lifetime");
+ const target=join(directory,`${account}.json`);
+ const archive=join(directory,"retired");mkdirSync(archive,{recursive:true,mode:0o700});
+ if(existsSync(target))linkSync(target,join(archive,`${account}.${randomUUID()}.json`));
+ renameSync(join(pending,`${account}.json`),target);
+ markAgentAuthorized(account,directory);
+ return getAgent(account,false,directory)!;
+}

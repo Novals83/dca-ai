@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { getAgent, markAgentAuthorized, syncAgentExpiry } from "../lib/agent/store";
+import { getAgent, markAgentAuthorized, syncAgentExpiry, pendingAgent, activatePendingAgent } from "../lib/agent/store";
 const directories: string[] = [];
 const directory = () => {const d = mkdtempSync(join(tmpdir(), "dca-agent-test-")); directories.push(d); return d;};
 const account = `0x${"1".repeat(40)}`;
@@ -38,4 +38,21 @@ it("syncs verified expiry without changing the signer or leaking its key",()=>{
  expect(next.expiresAt).toBe(first.expiresAt+86400000);
  expect(statSync(join(d,`${account}.json`)).mode & 0o777).toBe(0o600);
  expect(()=>syncAgentExpiry(account,account,first.expiresAt+86400000,d)).toThrow();
+});
+
+it("keeps the active signer until an exact, sufficiently long replacement is verified",()=>{
+ const d=directory();const old=getAgent(account,true,d)!;
+ const candidate=pendingAgent(account,true,Date.now()+50*86400000,d)!;
+ expect(candidate.address).not.toBe(old.address);
+ expect(getAgent(account,false,d)?.address).toBe(old.address);
+ expect(pendingAgent(account,true,candidate.expiresAt,d)?.address).toBe(candidate.address);
+ expect(()=>activatePendingAgent(account,old.address,candidate.expiresAt,d)).toThrow();
+ expect(()=>activatePendingAgent(account,candidate.address,candidate.expiresAt-1,d)).toThrow();
+ expect(getAgent(account,false,d)?.address).toBe(old.address);
+ const activated=activatePendingAgent(account,candidate.address,candidate.expiresAt,d);
+ expect(activated.address).toBe(candidate.address);
+ expect(activated.wasAuthorized).toBe(true);
+ expect(pendingAgent(account,false,0,d)).toBeNull();
+ expect(readdirSync(join(d,"retired"))).toHaveLength(1);
+ expect(pendingAgent(account,true,candidate.expiresAt,d)?.address).not.toBe(candidate.address);
 });

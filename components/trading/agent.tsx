@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { walletAddress, type WalletProvider } from "@/lib/wallet/provider";
 import {walletError} from "@/lib/wallet/error";
 import type {DCAPlan} from "@/lib/dca/schedule";
-type Agent = {configured: boolean; requiredUntil?:number|null; requestedUntil?:number; canAuthorize?:boolean; coverage?:boolean|null; account?: string; address?: `0x${string}`; name?: string; expiresAt?: number; status?: string; validUntil?: number | null};
+type Candidate={address:`0x${string}`;name:string;expiresAt:number};
+type Agent = {replacement?:Candidate|null;configured: boolean; requiredUntil?:number|null; requestedUntil?:number; canAuthorize?:boolean; coverage?:boolean|null; account?: string; address?: `0x${string}`; name?: string; expiresAt?: number; status?: string; validUntil?: number | null};
 export function AgentPanel({account, provider, plan}: {account: string; provider: WalletProvider; plan:DCAPlan|null}) {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -15,8 +16,8 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
   const active = useRef(true);
   const working = useRef(false);
   useEffect(() => { active.current = true; return () => {active.current = false;}; }, []);
-  async function status(create: boolean) {
-    const response = await fetch("/api/agent", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account, create, ...(plan?{plan}:{})}), signal: AbortSignal.timeout(20000)});
+  async function status(create: boolean, replace=false) {
+    const response = await fetch("/api/agent", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account, create, replace, ...(plan?{plan}:{})}), signal: AbortSignal.timeout(20000)});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Could not read agent status");
     if (active.current) {setAgent(result); setReviewed(false);}
@@ -32,7 +33,10 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
     finally {working.current = false; if (active.current) setBusy(false);}
   }
   async function approve() {
-    if (!reviewed || !agent?.address || !agent.name || !agent.requestedUntil || !agent.canAuthorize || !["not_authorized","authorized"].includes(agent.status || "")) return;
+    if (!reviewed || !agent?.address || !agent.name || !agent.requestedUntil || !agent.canAuthorize ) return;
+    const target=agent.replacement;
+    if(!target)throw new Error("Prepare a new agent address before requesting authorization");
+    if(target.expiresAt<agent.requestedUntil)throw new Error("The prepared agent does not cover the edited strategy. Restore the reviewed schedule before signing.");
     const expected = agent;
     const check = async () => {
       if (!active.current || Date.now() >= expected.requestedUntil! || walletAddress(await provider.request({method: "eth_accounts"})) !== account) throw new Error("Wallet changed or authorization expired");
@@ -53,7 +57,7 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
       },
     }});
     if(active.current)setMessage("Confirm the agent authorization signature in your wallet…");
-    await client.approveAgent({agentAddress: agent.address, agentName: `${agent.name} valid_until ${agent.requestedUntil}`});
+    await client.approveAgent({agentAddress: target.address, agentName: `${target.name} valid_until ${target.expiresAt}`});
     const result=await status(false);
     if(active.current)setMessage(result.coverage===true ? "Authorization verified. The entire strategy is covered." : "Hyperliquid accepted the request, but extended authorization is not yet verified. Refresh authorization status.");
   }
@@ -69,11 +73,14 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
       {agent.coverage===false && <p role="alert" className="error">Authorization does not cover the entire strategy. Required through {new Date(agent.requiredUntil!).toLocaleString()}. Renew before the next purchase.</p>}
       {agent.coverage===true && <p>Authorization covers the entire saved strategy and displayed draft.</p>}
       {!agent.canAuthorize && <p role="alert" className="error">The schedule exceeds the supported authorization window (179 days). Shorten the strategy before authorizing.</p>}
-      {agent.canAuthorize && ["not_authorized","authorized"].includes(agent.status || "") && agent.coverage!==true && <>
-        <label className="purchase-confirm"><input type="checkbox" disabled={busy} checked={reviewed} onChange={e => setReviewed(e.target.checked)}/> I authorize this local agent to trade for my account until {new Date(agent.requestedUntil!).toLocaleString()} (final purchase plus five minutes). This permission is not limited to the draft budget.</label>
-        <Button disabled={busy || !reviewed} onClick={() => void run(approve)}>Authorize through final purchase</Button>
+      {agent.canAuthorize && agent.coverage!==true && <>
+        {!agent.replacement && <Button disabled={busy} onClick={()=>void run(async()=>{await status(false,true);})}>Prepare replacement agent</Button>}
+        {agent.replacement && <>
+        <p>New agent: <code>{agent.replacement.address}</code><br/>Authorization until {new Date(agent.replacement.expiresAt).toLocaleString()}. The current signer stays selected until this new permission is verified. The old permission is not revoked automatically.</p>
+        <label className="purchase-confirm"><input type="checkbox" disabled={busy} checked={reviewed} onChange={e => setReviewed(e.target.checked)}/> I authorize this local agent to trade for my account until {new Date(agent.replacement.expiresAt).toLocaleString()}. This permission is not limited to the draft budget.</label>
+        <Button disabled={busy || !reviewed} onClick={() => void run(approve)}>Authorize new agent in wallet</Button></>}
       </>}
-      {["expired", "revoked"].includes(agent.status || "") && <p>Create a fresh agent key before future use. Do not reuse an expired or revoked agent.</p>}
+      {["expired", "revoked"].includes(agent.status || "") && <p>Prepare a replacement below using a fresh address. Expired and revoked addresses are never reauthorized.</p>}
       <p>Start and pause recurring execution in Scheduled DCA. To revoke trading access, remove this agent in Hyperliquid’s API settings. Pausing a strategy will not revoke its permission.</p>
     </>}
     {message && <p role="alert" className="error">{message}</p>}
