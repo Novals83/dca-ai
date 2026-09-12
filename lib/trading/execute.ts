@@ -2,6 +2,7 @@ import { ExchangeClient } from "@nktkas/hyperliquid";
 import { createWalletClient, custom } from "viem";
 import type { WalletProvider } from "@/lib/wallet/provider";
 import { walletAddress } from "@/lib/wallet/provider";
+import { walletError } from "@/lib/wallet/error";
 import type { Quote } from "./quote";
 export type PurchaseRecord = { quote: Quote; state: "pending" | "result" | "unknown" | "not_sent"; response?: unknown; updatedAt: string };
 export function recordKey(account: string) { return `dca-ai:purchase:${account.toLowerCase()}`; }
@@ -46,7 +47,7 @@ export async function executePurchase(provider: WalletProvider, quote: Quote, is
       record.response = response;
     } catch (e) {
       record.state = response !== undefined ? "result" : dispatched ? "unknown" : "not_sent";
-      record.response = response ?? {message: dispatched ? "Result unknown. Do not retry: check order history using the client order IDs." : e instanceof Error ? e.message : "Signature cancelled or order not sent."};
+      record.response = response ?? {message: dispatched ? "Result unknown. Do not retry: check order history using the client order IDs." : walletError(e)};
     }
     record.updatedAt = new Date().toISOString();
     saveRecord(record);

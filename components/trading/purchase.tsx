@@ -60,7 +60,7 @@ export function PurchasePanel({provider, account, amount, btcPercent}: {provider
     </>}
     {record && <div><h4>Last purchase: {record.state.toUpperCase()}</h4>
       {unresolved && <p className="error">Submission may have reached the exchange. New purchases are blocked. Check the client order IDs in Hyperliquid; do not retry blindly.</p>}
-      <p>A response is not a guarantee that both assets filled. Check each filled size, average price or error below.</p>
+      {record.state === "not_sent" ? <p>No order was sent to Hyperliquid. The message below describes the signing or pre-submission failure. Manual purchases currently request a browser-wallet signature even if an API agent is authorized.</p> : <p>A response is not a guarantee that both assets filled. Check each filled size, average price or error below.</p>}
       <pre className="purchase-result">{JSON.stringify(record.response ?? {clientOrderIds: record.quote.legs.map(l => l.cloid)}, null, 2)}</pre>
       <p className="small">Client order IDs: {record.quote.legs.map(l => l.cloid).join(", ")}</p>
       <a href="https://app.hyperliquid.xyz/portfolio" target="_blank" rel="noopener noreferrer">Check Hyperliquid history ↗</a>
