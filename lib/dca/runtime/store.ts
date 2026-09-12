@@ -21,3 +21,9 @@ export function requestPause(account:string) {mkdirSync(directory(),{recursive:t
 export const pauseRequested=(account:string)=>existsSync(path(account,"pause"));
 export function clearPause(account:string){try{unlinkSync(path(account,"pause"));}catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}}
 export function archive(state:RuntimeStrategy){writeFileSync(join(directory(),`${state.plan.account}.${state.id}.archive`),JSON.stringify(state),{flag:"wx",mode:0o600});}
+
+export function strategyHistory(account:string):RuntimeStrategy[]{
+ const current=readStrategy(account);let files:string[];
+ try{files=readdirSync(directory()).filter(f=>f.startsWith(`${account}.`)&&f.endsWith(".archive"));}catch(e){if((e as NodeJS.ErrnoException).code==="ENOENT")return current?[current]:[];throw e;}
+ return [...files.map(f=>JSON.parse(readFileSync(join(directory(),f),"utf8")) as RuntimeStrategy),...(current?[current]:[])];
+}

@@ -144,3 +144,9 @@ There is one current strategy per account. The total number of slots is the whol
 Slots more than five minutes late are skipped rather than caught up. Month-end cadence remains anchored in UTC. Insufficient balance, expired/revoked agents, partial fills, rejections and ambiguous outcomes block further execution for review. Known completed journal records can be recovered without another submission. Crash locks and unknown exchange outcomes still require operator reconciliation; never clear them blindly. Failed strategies cannot be resumed while their outcome is uncertain.
 
 The voice backend exposes a strict `create_dca_draft` tool with no trading or start capability. It asks for missing material inputs, returns a draft to the UI, and does not infer spending authorization from conversation. Fixed UI and text responses are English; voice responds in the language spoken.
+
+## Strategy returns and server migration
+
+**Strategy performance & accounting** shows actual invested USDC, fee-adjusted holdings, P&L, ROI, capital-time weighted APR and effective annualized XIRR. Annualized figures require at least 24 hours of complete history. Actual fills/fees and valuation snapshots are persisted; export them with **Export accounting JSON**. See [methodology, limitations and migration instructions](docs/ACCOUNTING.md).
+
+The accounting layer supports local files or PostgreSQL/Supabase through `ACCOUNTING_STORAGE` and a server-only `DATABASE_URL`. Execution state and agent keys still live in the persistent Docker volume and must be transferred separately. Release image: `dca-ai:0.6.0`.

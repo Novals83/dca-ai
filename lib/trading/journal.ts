@@ -1,4 +1,4 @@
-import {mkdirSync, readFileSync, writeFileSync, renameSync, openSync, fsyncSync, closeSync, rmdirSync} from "node:fs";
+import {readdirSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, fsyncSync, closeSync, rmdirSync} from "node:fs";
 import {join} from "node:path";
 import {randomUUID} from "node:crypto";
 import type {Quote} from "./quote";
@@ -40,4 +40,9 @@ export function lastResult(account: string): PurchaseRecord | null {
 export function rememberResult(record: PurchaseRecord) {
   persistResult(record);
   write(`${accountFile(record.quote.account)}.latest`, record.quote.id);
+}
+
+export function purchaseRecords(account?:string):PurchaseRecord[]{
+ let files:string[];try{files=readdirSync(journalDirectory());}catch(e){if((e as NodeJS.ErrnoException).code==="ENOENT")return [];throw e;}
+ return files.filter(f=>f.endsWith(".result.json")).map(f=>JSON.parse(readFileSync(join(journalDirectory(),f),"utf8")) as PurchaseRecord).filter(r=>!account||r.quote.account===account);
 }

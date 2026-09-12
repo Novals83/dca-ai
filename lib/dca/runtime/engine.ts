@@ -1,3 +1,5 @@
+import {refreshPerformance} from "../../accounting/service";
+import {purchaseRecords} from "../../trading/journal";
 import Decimal from "decimal.js";
 import {occurrence,planSummary} from "../schedule";
 import {preparePurchase} from "../../trading/prepare";
@@ -52,5 +54,8 @@ export function startWorker(){
  if(process.env.DCA_WORKER_ENABLED!=="1" || globalWorker.dcaWorker?.started)return;
  const status:WorkerState={started:true,busy:false,lastTick:null,error:false};globalWorker.dcaWorker=status;
  const tick=async()=>{if(status.busy)return;status.busy=true;try{for(const account of accounts())await runAccount(account);status.error=false;}catch{status.error=true;}finally{status.lastTick=new Date().toISOString();status.busy=false;}};
+ let accountingBusy=false;
+ const accountTick=async()=>{if(accountingBusy)return;accountingBusy=true;try{for(const account of new Set(purchaseRecords().map(r=>r.quote.account))){try{await refreshPerformance(account);}catch{/* Retry on the next accounting tick without delaying trading. */}}}finally{accountingBusy=false;}};
  setInterval(()=>void tick(),15000).unref();void tick();
+ setInterval(()=>void accountTick(),300000).unref();void accountTick();
 }

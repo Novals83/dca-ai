@@ -4,6 +4,7 @@ import { discoverWallets, walletAddress, type Wallet } from "@/lib/wallet/provid
 import { loadPlan, savePlan, planSchema, planSummary, type DCAPlan } from "@/lib/dca/schedule";
 import { Button } from "@/components/ui/button";
 import { AgentPanel } from "./agent";
+import { PerformancePanel } from "./performance";
 import { SchedulerPanel } from "./scheduler";
 import type { DCADraft } from "@/lib/dca/draft";
 import { PurchasePanel } from "./purchase";
@@ -99,6 +100,7 @@ export function TradingSetup({ onViewPortfolio, voiceDraft }: { voiceDraft?: DCA
         <Button type="submit" disabled={!parsed.success}>{saved ? "Draft saved" : "Save DCA draft"}</Button>
         <p className="small muted">Saved only in this browser, separately for each wallet. A wallet connection is not proof of trading authorization. Saving this browser draft does not start or change server execution.</p>
       </form>
+      <PerformancePanel key={connected.address} account={connected.address} />
       <SchedulerPanel key={`${connected.address}:${amount}:${budget}:${btcPercent}:${frequency}:${start}`} account={connected.address} provider={connected.wallet.provider} plan={parsed.success ? parsed.data : null} />
       <AgentPanel key={connected.address} account={connected.address} provider={connected.wallet.provider} />
           <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />

@@ -39,7 +39,7 @@ export async function POST(request:Request){
     current.status="running";delete current.error;clearPause(input.account);writeStrategy(current);
    }else{
     if(current)archive(current);
-    const state:RuntimeStrategy={id:randomUUID(),...config,status:"running",nextIndex:0,reservedUSDC:0,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),runs:[]};
+    const state:RuntimeStrategy={seriesId:current?.seriesId??current?.id??randomUUID(),id:randomUUID(),...config,status:"running",nextIndex:0,reservedUSDC:0,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),runs:[]};
     clearPause(input.account);writeStrategy(state);
    }
    return response();
