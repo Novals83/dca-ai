@@ -2,7 +2,7 @@
 
 [Public repository](https://github.com/Novals83/dca-ai)
 
-Local-first portfolio intelligence and BTC + HYPE accumulation simulations. **No trades, signing, private keys, cron jobs or money movement.** The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
+Local-first portfolio intelligence and BTC + HYPE accumulation simulations. Manual, wallet-confirmed mainnet spot purchases are available in DCA setup. Recurring execution is not connected yet; private keys stay in your wallet. The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
 
 ## Run in a fresh container
 
@@ -57,8 +57,8 @@ docker compose exec web npm run build
 Production image (separate from the development server):
 
 ```sh
-docker build --target production -t dca-ai:0.1.0 .
-docker run --rm --name dca-ai-production -p 127.0.0.1:3101:3000 --env-file .env dca-ai:0.1.0
+docker build --target production -t dca-ai:0.3.0 .
+docker run --rm --name dca-ai-production -p 127.0.0.1:3101:3000 --env-file .env dca-ai:0.3.0
 ```
 
 Open [localhost:3101](http://localhost:3101). `.env` is optional; omit `--env-file` for a keyless launch.
@@ -86,4 +86,14 @@ Select **DCA setup** to discover EIP-6963 browser wallets (including MetaMask). 
 
 **Save DCA draft** persists the plan in this browser, separately for each wallet address. Wallet/account/network changes invalidate the connection. These are configuration drafts, not running jobs: no signatures, API-agent permissions, exchange orders or cron workers are created. Voice currently controls simulation previews, not purchase drafts.
 
-Next integration stages: live spot pair resolution and order sizing; explicit wallet authorization and one-purchase execution; durable container scheduling with budget reservations, idempotent order IDs, reconciliation and Start/Pause controls. Do not label a draft as running before that execution path exists.
+Next integration stage: durable container scheduling with budget reservations, idempotent order IDs, reconciliation and Start/Pause controls. Do not label a draft as running before that execution path exists.
+
+## Manual spot purchase (stage 2)
+
+After connecting a browser wallet in **DCA setup**, choose the amount/allocation and click **Prepare purchase**. The server reads verified UBTC/USDC and HYPE/USDC markets, fresh asks, account mode and available spot USDC. It rounds sizes/prices to exchange precision, reserves 1% within each allocation for fees, and blocks insufficient balances or allocations below the $10 minimum. The reserve is an estimate, not a quoted fee.
+
+Review the 60-second quote, check the confirmation box, then click **Sign and buy once**. The wallet signs through the Hyperliquid SDK; the browser sends the signed IOC batch directly to the official mainnet exchange. Orders can fill partially or return independent errors. This action is separate from the saved schedule and does not consume its draft budget. BTC allocation purchases **UBTC (Unit Bitcoin)**.
+
+A browser journal and per-wallet Web Lock prevent concurrent submissions and replay of the same quote. A timeout after dispatch is UNKNOWN and blocks further purchases; it is never automatically retried. Inspect the saved client order IDs in exchange history. Automated reconciliation and recovery are still pending. The journal is local to this browser and origin, not shared across devices. Clearing browser data removes this protection. No private key, API-agent permission, automatic purchase or scheduler is created.
+
+Tests use mocked signing/network responses; no real wallet signatures or purchases are performed during validation.

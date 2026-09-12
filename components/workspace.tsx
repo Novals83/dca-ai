@@ -979,7 +979,7 @@ export function Workspace({
             financial advice. Crypto assets and leveraged positions involve
             substantial risk.
             <span>
-              LOCAL FIRST <i /> READ ONLY <i /> OPEN SOURCE
+              LOCAL FIRST <i /> OPEN SOURCE
             </span>
           </footer>
         </main>

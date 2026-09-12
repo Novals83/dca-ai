@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { discoverWallets, walletAddress, type Wallet } from "@/lib/wallet/provider";
 import { loadPlan, savePlan, planSchema, planSummary, type DCAPlan } from "@/lib/dca/schedule";
 import { Button } from "@/components/ui/button";
+import { PurchasePanel } from "./purchase";
 import { money } from "@/lib/format";
 
 export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: string) => void }) {
@@ -67,7 +68,7 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
   return <section className="dca-setup card" aria-label="DCA setup">
     <div className="section-label">DCA SETUP · MAINNET</div>
     <h2>Connect. Plan. Review.</h2>
-    <p className="muted">Connect your wallet and save a recurring purchase plan. This step stores a draft; order execution and the background scheduler are not connected yet.</p>
+    <p className="muted">Connect your wallet and save a recurring purchase plan. Save the schedule as a draft, or prepare a separate one-time purchase below. The background scheduler is not connected yet.</p>
     {!connected ? <div className="wallet-options">
       {wallets.length === 0 && <p>Open this app in Chrome with MetaMask or another EVM wallet installed.</p>}
       {wallets.map(wallet => <Button key={wallet.id} disabled={busy} onClick={() => void connect(wallet)}>{busy ? "Connecting…" : `Connect ${wallet.name}`}</Button>)}
@@ -94,6 +95,7 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
         <Button type="submit" disabled={!parsed.success}>{saved ? "Draft saved" : "Save DCA draft"}</Button>
         <p className="small muted">Saved only in this browser, separately for each wallet. A wallet connection is not proof of trading authorization. No purchases are running.</p>
       </form>
+      <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />
     </>}
     {error && <p className="error" role="alert">{error}</p>}
   </section>;

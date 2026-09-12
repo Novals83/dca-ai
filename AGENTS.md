@@ -21,5 +21,5 @@
 
 - The user selected mainnet spot purchases with USDC, without leverage.
 - Build real trading software in stages; validate code without initiating real purchases on the user's account.
-- Stage 1 provides wallet discovery and per-address browser drafts with UTC schedules. It does not execute orders or run a scheduler; keep this limitation visible.
+- Stage 1 provides wallet discovery and per-address browser drafts with UTC schedules. Stage 2 adds explicitly confirmed one-time spot purchases. Drafts do not run a scheduler; keep this limitation visible.
 - Keep purchase-plan configuration separate from the simulation builder and AI previews until explicit confirmation flows connect them.
