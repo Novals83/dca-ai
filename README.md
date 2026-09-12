@@ -70,3 +70,12 @@ See [calculation methodology](docs/CALCULATIONS.md), [architecture and editions]
 Only standard Hyperliquid accounts are supported. Unified accounts, portfolio margin and DEX abstraction are explicitly rejected rather than presenting unreconciled equity. Vaults, staking, HIP-3 DEXs and linked subaccounts are excluded. Unknown spot prices are excluded with a visible warning. USDC card shows spot cash only. Prices and account snapshots may have slightly different timestamps and are not executable quotes. BTC/HYPE market quotes refresh automatically every 15 seconds, including in demo mode. Portfolio balances and position marks remain a separate snapshot; refresh a connected portfolio manually. USDC $1 is a peg reference, not a live quote.
 
 MVP1 is local, single-user software. Do not expose this development deployment publicly with a funded API key. Paid multi-user cloud hosting requires authentication, quotas, tenant isolation, durable storage and operational controls first. Local origin checks and in-memory request limits are not cloud authentication.
+
+
+## Use alongside Hyperliquid in Chrome
+
+Open the MVP and Hyperliquid in Chrome Split view. Right-click the **Hyperliquid** link in the app header and choose **Open link in split view**. If both tabs are already open, combine them using the tab context menu instead of opening duplicates. A normal click opens a new tab; web pages cannot force Chrome's native split layout.
+
+Keep the pair open. Chrome's **Settings → On startup → Continue where you left off** restores the previous browsing session; the app does not modify this browser-wide preference. Start the microphone explicitly using **Start voice**.
+
+[Chrome Split view instructions](https://support.google.com/chrome/answer/16971124?hl=en)

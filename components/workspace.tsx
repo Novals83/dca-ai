@@ -303,7 +303,15 @@ export function Workspace({
         <span className="header-divider" />
         <span className="header-subtitle">HYPERLIQUID COPILOT</span>
         <div className="top-actions">
-          <span className="edition">COMMUNITY</span>
+          <a
+            className="account-button exchange-link"
+            href="https://app.hyperliquid.xyz/trade"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Открыть Hyperliquid. Для двух панелей: правый клик → Открыть ссылку в разделённом окне"
+          >
+            Hyperliquid <ArrowUpRight size={15} />
+          </a>
           <button className="account-button" onClick={() => setConnect(true)}>
             <Wallet size={15} />
             {account === "demo"
@@ -315,6 +323,20 @@ export function Workspace({
           </button>
         </div>
       </header>
+      <details className="split-view-help">
+        <summary>Как открыть Hyperliquid рядом</summary>
+        <p>
+          В Chrome нажми правой кнопкой на ссылку Hyperliquid сверху и выбери
+          «Открыть ссылку в разделённом окне» (Open link in split view).
+          Если биржа уже открыта, объедини существующие вкладки через меню вкладки.
+          Обычный клик открывает биржу в новой вкладке.
+        </p>
+        <p>
+          Оставь эту пару открытой. Для возвращения после перезапуска Chrome:
+          Настройки → Запуск Chrome → Ранее открытые вкладки.
+          Микрофон включается отдельно кнопкой Start voice.
+        </p>
+      </details>
       <div className="workspace-layout">
         <nav className="rail" aria-label="Sections">
           <a
