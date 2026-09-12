@@ -18,6 +18,6 @@ export async function POST(request: Request) {
     const approved = agents.find(a => a.address.toLowerCase() === agent.address.toLowerCase());
     if (approved) markAgentAuthorized(input.account);
     const expired = agent.expiresAt <= Date.now() || (approved?.validUntil != null && approved.validUntil <= Date.now());
-    return Response.json({configured: true, ...agent, status: expired ? "expired" : approved ? "authorized" : agent.wasAuthorized ? "revoked" : "not_authorized", validUntil: approved?.validUntil ?? null, scheduler: false}, {headers: {"Cache-Control": "no-store"}});
+    return Response.json({configured: true, ...agent, status: expired ? "expired" : approved ? "authorized" : agent.wasAuthorized ? "revoked" : "not_authorized", validUntil: approved?.validUntil ?? null, scheduler: process.env.DCA_WORKER_ENABLED === "1"}, {headers: {"Cache-Control": "no-store"}});
   } catch (error) { return apiError(error); }
 }

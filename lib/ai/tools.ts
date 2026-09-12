@@ -1,3 +1,4 @@
+import { dcaDraftSchema } from "../dca/draft";
 import { z } from "zod";
 import {
   strategySchema,
@@ -15,6 +16,7 @@ export const toolNames = [
   "calculate_allocation",
   "calculate_effective_leverage",
   "create_strategy_preview",
+  "create_dca_draft",
 ] as const;
 export type ToolName = (typeof toolNames)[number];
 const strategyProperties = {
@@ -39,6 +41,7 @@ export const aiTools = toolNames.map((name) => ({
   type: "function" as const,
   name,
   description: {
+    create_dca_draft: "Create a recurring spot DCA draft for UI review. Does not start, change or pause execution. Ask for budget and UTC start time if missing.",
     get_portfolio: "Get the verified portfolio and exposures.",
     get_market_prices: "Get reference BTC perp mid and HYPE spot mid prices.",
     simulate_dca:
@@ -51,7 +54,7 @@ export const aiTools = toolNames.map((name) => ({
       "Validate and preview a strategy. Does not save or execute.",
   }[name],
   strict: true,
-  parameters: ["simulate_dca", "create_strategy_preview"].includes(name)
+  parameters: name === "create_dca_draft" ? {type:"object",properties:{amount:{type:"number"},budget:{type:"number"},btcPercent:{type:"integer"},frequency:{type:"string",enum:["daily","weekly","monthly"]},startAt:{type:"string",description:"ISO UTC timestamp for the first purchase"}},required:["amount","budget","btcPercent","frequency","startAt"],additionalProperties:false} : ["simulate_dca", "create_strategy_preview"].includes(name)
     ? strategyParams
     : name === "compare_dca_strategies"
       ? {
@@ -99,6 +102,7 @@ export function runTool(
       hypePrice: context.market.HYPE,
     });
   switch (name) {
+    case "create_dca_draft": return {draft:dcaDraftSchema.parse(args),status:"draft_only",nextStep:"Review in DCA setup, connect wallet and click Start DCA strategy. No execution has been started."};
     case "get_portfolio":
       return context.portfolio;
     case "get_market_prices":

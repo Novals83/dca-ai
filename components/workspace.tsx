@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/dialog";
+import type { DCADraft } from "@/lib/dca/draft";
 import { TradingSetup } from "./trading/setup";
 import { Avatar } from "./copilot/avatar";
 import { CopilotPanel } from "./copilot/panel";
@@ -66,6 +67,7 @@ export function Workspace({
   const [market, setMarket] = useState<Market>(demoMarket);
   const [strategy, setStrategy] = useState<Strategy>(demoStrategy);
   const [saved, setSaved] = useState<Strategy | null>(demoStrategy);
+  const [voiceDraft, setVoiceDraft] = useState<DCADraft | null>(null);
   const [preview, setPreview] = useState<Strategy | null>(null);
   const [connect, setConnect] = useState(initialConnect);
   const [address, setAddress] = useState("");
@@ -365,7 +367,7 @@ export function Workspace({
             <button aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>Portfolio & simulation</button>
             <button aria-pressed={mode === "dca"} onClick={() => setMode("dca")}>DCA setup</button>
           </div>
-          {mode === "dca" && <TradingSetup onViewPortfolio={target => { setMode("analysis"); void loadAccount(target); }} />}
+          {mode === "dca" && <TradingSetup voiceDraft={voiceDraft} onViewPortfolio={target => { setMode("analysis"); void loadAccount(target); }} />}
           <div hidden={mode !== "analysis"}>
           <div className="page-heading">
             <div>
@@ -988,6 +990,7 @@ export function Workspace({
             key={account}
             account={account}
             strategy={resultSchema.success ? strategy : defaultStrategy}
+            onDcaDraft={draft => {setVoiceDraft(draft);setMode("dca");}}
             onPreview={onPreview}
             onClose={() => setCopilotOpen(false)}
             aiConfigured={aiConfigured}

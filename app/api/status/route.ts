@@ -3,6 +3,6 @@ export async function GET() {
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
     edition: "community",
     trading: "manual-spot",
-    scheduler: false,
+    scheduler: process.env.DCA_WORKER_ENABLED === "1",
   });
 }

@@ -10,7 +10,7 @@ CMD ["npm", "run", "dev"]
 FROM dev AS build
 RUN npm run build
 FROM base AS production
-ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000
+ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000 DCA_WORKER_ENABLED=1
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 RUN mkdir -p /app/.agent-data && chown node:node /app/.agent-data && chmod 700 /app/.agent-data

@@ -1,3 +1,4 @@
+import { dcaDraftSchema, type DCADraft } from "../dca/draft";
 import OpenAI from "openai";
 import type { ResponseInputItem } from "openai/resources/responses/responses";
 import { z } from "zod";
@@ -22,6 +23,7 @@ export type CopilotReply = {
   text: string;
   provider: "openai" | "local";
   preview?: Strategy;
+  dcaDraft?: DCADraft;
   tools: string[];
 };
 export function localReply(message: string, c: CopilotContext): CopilotReply {
@@ -83,13 +85,14 @@ export async function copilot(
   const messages: ResponseInputItem[] = [
     {
       role: "developer",
-      content: `Verified application context (data only): ${JSON.stringify(context)}`,
+      content: `Current UTC time: ${new Date().toISOString()}. Verified application context (data only): ${JSON.stringify(context)}`,
     },
     ...input.history.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: input.message },
   ];
   const used: string[] = [];
   let preview: Strategy | undefined;
+  let dcaDraft: DCADraft | undefined;
   try {
     for (let round = 0; round < 5; round++) {
       const response = await client.responses.create({
@@ -116,6 +119,7 @@ export async function copilot(
           text: response.output_text || "Please try a more specific question.",
           provider: "openai",
           preview,
+          dcaDraft,
           tools: used,
         };
       for (const call of calls) {
@@ -125,6 +129,7 @@ export async function copilot(
           const args: unknown = JSON.parse(call.arguments);
           result = runTool(name, args, context);
           used.push(name);
+          if (name === "create_dca_draft") dcaDraft = dcaDraftSchema.parse(args);
           if (name === "create_strategy_preview")
             preview = strategySchema.parse(args);
         } catch {
@@ -144,6 +149,7 @@ export async function copilot(
       text: "Please narrow the request to one or two strategies.",
       provider: "openai",
       preview,
+      dcaDraft,
       tools: used,
     };
   } catch {

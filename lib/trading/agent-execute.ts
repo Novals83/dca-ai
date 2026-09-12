@@ -7,7 +7,7 @@ import {spotMetaSchema, resolveSpot} from "./quote";
 import {lockAccount, readQuote, readResult, lastResult, rememberResult} from "./journal";
 import type {PurchaseRecord} from "./execute";
 class PreflightError extends Error {}
-export async function executeAgentPurchase(account: string, quoteId: string): Promise<PurchaseRecord> {
+export async function executeAgentPurchase(account: string, quoteId: string, isAllowed: () => boolean = () => true): Promise<PurchaseRecord> {
   const quote = readQuote(quoteId);
   if (quote.account !== account) throw new Error("Purchase account mismatch");
   const unlock = lockAccount(account); // A crashed lock fails closed; never automatically discard it.
@@ -44,6 +44,7 @@ export async function executeAgentPurchase(account: string, quoteId: string): Pr
       if (signer.address.toLowerCase() !== agent.address.toLowerCase()) throw new PreflightError("Agent changed. Prepare again.");
       const exchange = new ExchangeClient({wallet:signer, transport:{isTestnet:false,
         async request<T>(endpoint:"info"|"exchange", payload:unknown): Promise<T> {
+          if (!isAllowed()) throw new PreflightError("Strategy paused before dispatch. No order was sent.");
           if (endpoint !== "exchange" || Date.now() >= quote.expiresAt) throw new PreflightError("Quote expired before dispatch. Prepare again.");
           dispatched = true;
           const res = await fetch("https://api.hyperliquid.xyz/exchange", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload), signal:AbortSignal.timeout(20000)});

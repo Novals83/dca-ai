@@ -60,7 +60,7 @@ export function AgentPanel({account, provider}: {account: string; provider: Wall
         <Button disabled={busy || !reviewed} onClick={() => void run(approve)}>Approve agent in wallet</Button>
       </>}
       {["expired", "revoked"].includes(agent.status || "") && <p>Create a fresh agent key before future use. Do not reuse an expired or revoked agent.</p>}
-      <p>Scheduler: not connected. To revoke trading access, remove this agent in Hyperliquid’s API settings. Pausing a strategy will not revoke its permission.</p>
+      <p>Start and pause recurring execution in Scheduled DCA. To revoke trading access, remove this agent in Hyperliquid’s API settings. Pausing a strategy will not revoke its permission.</p>
     </>}
     {message && <p role="alert" className="error">{message}</p>}
   </section>;

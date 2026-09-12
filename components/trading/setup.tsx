@@ -4,10 +4,12 @@ import { discoverWallets, walletAddress, type Wallet } from "@/lib/wallet/provid
 import { loadPlan, savePlan, planSchema, planSummary, type DCAPlan } from "@/lib/dca/schedule";
 import { Button } from "@/components/ui/button";
 import { AgentPanel } from "./agent";
+import { SchedulerPanel } from "./scheduler";
+import type { DCADraft } from "@/lib/dca/draft";
 import { PurchasePanel } from "./purchase";
 import { money } from "@/lib/format";
 
-export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: string) => void }) {
+export function TradingSetup({ onViewPortfolio, voiceDraft }: { voiceDraft?: DCADraft | null; onViewPortfolio: (account: string) => void }) {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [connected, setConnected] = useState<{ wallet: Wallet; address: string } | null>(null);
   const [error, setError] = useState("");
@@ -69,7 +71,7 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
   return <section className="dca-setup card" aria-label="DCA setup">
     <div className="section-label">DCA SETUP · MAINNET</div>
     <h2>Connect. Plan. Review.</h2>
-    <p className="muted">Connect your wallet and save a recurring purchase plan. Save the schedule as a draft, or prepare a separate one-time purchase below. The background scheduler is not connected yet.</p>
+    <p className="muted">Connect your wallet and save a recurring purchase plan. Save the schedule as a draft, or prepare a separate one-time purchase below. Review the schedule below and explicitly start the local DCA worker.</p>
     {!connected ? <div className="wallet-options">
       {wallets.length === 0 && <p>Open this app in Chrome with MetaMask or another EVM wallet installed.</p>}
       {wallets.map(wallet => <Button key={wallet.id} disabled={busy} onClick={() => void connect(wallet)}>{busy ? "Connecting…" : `Connect ${wallet.name}`}</Button>)}
@@ -79,6 +81,7 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
         <Button variant="outline" onClick={() => onViewPortfolio(connected.address)}>View portfolio</Button>
         <Button variant="ghost" onClick={() => { revision.current++; setConnected(null); setSaved(false); }}>Disconnect app</Button>
       </div>
+      {voiceDraft && <div className="plan-review"><h3>Voice / Copilot draft</h3><p>{voiceDraft.amount} USDC per {voiceDraft.frequency} installment · budget {voiceDraft.budget} USDC · UBTC {voiceDraft.btcPercent}% · {voiceDraft.startAt}</p><Button onClick={()=>{setAmount(voiceDraft.amount);setBudget(voiceDraft.budget);setBtcPercent(voiceDraft.btcPercent);setFrequency(voiceDraft.frequency);setStart(voiceDraft.startAt.slice(0,16));setSaved(false);}}>Use draft in form</Button><p>Review and start below. This draft has not changed a running strategy.</p></div>}
       <form onSubmit={e => { e.preventDefault(); save(); }} onChange={() => setSaved(false)}>
         <div className="plan-fields">
           <label>Market<select value={market} onChange={e => setMarket(e.target.value as DCAPlan["market"])}><option value="spot">Spot · USDC</option></select></label>
@@ -90,12 +93,13 @@ export function TradingSetup({ onViewPortfolio }: { onViewPortfolio: (account: s
         </div>
         {summary && <div className="plan-review">
           <p>Each purchase: BTC {money(summary.btc)} · HYPE {money(summary.hype)}. {summary.count} purchases · {money(summary.allocated)} allocated · {money(summary.remainder)} unallocated.</p>
-          <p className="muted">Fees are additional. Individual orders still need exchange minimum-size, available-balance and price checks before execution. Dates below are in UTC.</p>
+          <p className="muted">Execution reserves fees inside each installment. Individual orders still need exchange minimum-size, available-balance and price checks before execution. Dates below are in UTC.</p>
           <ol>{summary.nextRuns.map(run => <li key={run}>{run.replace("T", " ").replace(":00.000Z", " UTC")}</li>)}</ol>
         </div>}
         <Button type="submit" disabled={!parsed.success}>{saved ? "Draft saved" : "Save DCA draft"}</Button>
-        <p className="small muted">Saved only in this browser, separately for each wallet. A wallet connection is not proof of trading authorization. No purchases are running.</p>
+        <p className="small muted">Saved only in this browser, separately for each wallet. A wallet connection is not proof of trading authorization. Saving this browser draft does not start or change server execution.</p>
       </form>
+      <SchedulerPanel key={`${connected.address}:${amount}:${budget}:${btcPercent}:${frequency}:${start}`} account={connected.address} provider={connected.wallet.provider} plan={parsed.success ? parsed.data : null} />
       <AgentPanel key={connected.address} account={connected.address} provider={connected.wallet.provider} />
           <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />
     </>}

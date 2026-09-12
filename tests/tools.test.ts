@@ -34,3 +34,10 @@ it("tool rejects invalid leverage", async () => {
 });
 
 vi.mock("../lib/hyperliquid/market", () => ({ getMarket: vi.fn(async () => ({ BTC: 95000, HYPE: 40, source: "live", asOf: new Date().toISOString() })) }));
+
+it("creates a real DCA draft without authorization or execution", async () => {
+ const c=await getContext({account:"demo"});
+ const draft={amount:50,budget:500,btcPercent:65,frequency:"daily",startAt:"2027-01-01T12:00:00.000Z"};
+ expect(runTool("create_dca_draft",draft,c)).toMatchObject({draft,status:"draft_only"});
+ expect(()=>runTool("create_dca_draft",{...draft,budget:10},c)).toThrow();
+});

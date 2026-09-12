@@ -21,7 +21,9 @@
 
 - The user selected mainnet spot purchases with USDC, without leverage.
 - Build real trading software in stages; validate code without initiating real purchases on the user's account.
-- Stage 1 provides wallet discovery and per-address browser drafts with UTC schedules. One-time spot purchases are explicitly confirmed in the UI and signed by the authorized local API agent inside the container. Drafts do not run a scheduler; keep this limitation visible.
+- Stage 1 provides wallet discovery and per-address browser drafts with UTC schedules. One-time spot purchases are explicitly confirmed in the UI and signed by the authorized local API agent inside the container. Drafts do not start execution. Explicit Start DCA strategy creates a persisted schedule; production runs it in the container worker.
 - Keep purchase-plan configuration separate from the simulation builder and AI previews until explicit confirmation flows connect them.
 
 - Preserve the `dca-ai-agent-data` volume on production updates: it contains agent keys and the durable purchase journal. Never expose private keys or clear uncertain execution records to bypass a block.
+
+- Test scheduling with isolated temporary storage and mocked exchange transports. Do not start a funded real strategy during validation. Preserve reservations and uncertain outcomes across restarts.
