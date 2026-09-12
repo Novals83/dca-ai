@@ -4,8 +4,9 @@ import { ExchangeClient } from "@nktkas/hyperliquid";
 import { createWalletClient, custom } from "viem";
 import { Button } from "@/components/ui/button";
 import { walletAddress, type WalletProvider } from "@/lib/wallet/provider";
-type Agent = {configured: boolean; account?: string; address?: `0x${string}`; name?: string; expiresAt?: number; status?: string; validUntil?: number | null};
-export function AgentPanel({account, provider}: {account: string; provider: WalletProvider}) {
+import type {DCAPlan} from "@/lib/dca/schedule";
+type Agent = {configured: boolean; requiredUntil?:number|null; requestedUntil?:number; canAuthorize?:boolean; coverage?:boolean|null; account?: string; address?: `0x${string}`; name?: string; expiresAt?: number; status?: string; validUntil?: number | null};
+export function AgentPanel({account, provider, plan}: {account: string; provider: WalletProvider; plan:DCAPlan|null}) {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewed, setReviewed] = useState(false);
@@ -14,12 +15,15 @@ export function AgentPanel({account, provider}: {account: string; provider: Wall
   const working = useRef(false);
   useEffect(() => { active.current = true; return () => {active.current = false;}; }, []);
   async function status(create: boolean) {
-    const response = await fetch("/api/agent", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account, create}), signal: AbortSignal.timeout(20000)});
+    const response = await fetch("/api/agent", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account, create, ...(plan?{plan}:{})}), signal: AbortSignal.timeout(20000)});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Could not read agent status");
     if (active.current) {setAgent(result); setReviewed(false);}
     return result as Agent;
   }
+  const refresh = useRef(status);
+  useEffect(()=>{refresh.current=status;});
+  useEffect(()=>{void refresh.current(false).catch(()=>{if(active.current)setMessage("Could not read authorization status. Refresh to retry.");});},[]);
   async function run(action: () => Promise<void>) {
     if (working.current) return;
     working.current = true; setBusy(true); setMessage("");
@@ -27,10 +31,10 @@ export function AgentPanel({account, provider}: {account: string; provider: Wall
     finally {working.current = false; if (active.current) setBusy(false);}
   }
   async function approve() {
-    if (!reviewed || !agent?.address || !agent.name || !agent.expiresAt || agent.status !== "not_authorized") return;
+    if (!reviewed || !agent?.address || !agent.name || !agent.requestedUntil || !agent.canAuthorize || !["not_authorized","authorized"].includes(agent.status || "")) return;
     const expected = agent;
     const check = async () => {
-      if (!active.current || Date.now() >= expected.expiresAt! || walletAddress(await provider.request({method: "eth_accounts"})) !== account) throw new Error("Wallet changed or authorization expired");
+      if (!active.current || Date.now() >= expected.requestedUntil! || walletAddress(await provider.request({method: "eth_accounts"})) !== account) throw new Error("Wallet changed or authorization expired");
     };
     await check();
     const client = new ExchangeClient({wallet: createWalletClient({account: account as `0x${string}`, transport: custom(provider)}), transport: {
@@ -43,7 +47,7 @@ export function AgentPanel({account, provider}: {account: string; provider: Wall
         return await response.json() as T;
       },
     }});
-    await client.approveAgent({agentAddress: agent.address, agentName: `${agent.name} valid_until ${agent.expiresAt}`});
+    await client.approveAgent({agentAddress: agent.address, agentName: `${agent.name} valid_until ${agent.requestedUntil}`});
     await status(false);
   }
   return <section className="plan-review">
@@ -55,9 +59,12 @@ export function AgentPanel({account, provider}: {account: string; provider: Wall
     {agent?.configured && <>
       <p className="small">Account: {account}<br/>Agent: {agent.address}<br/>Name: {agent.name}</p>
       <p>Status: <strong>{agent.status?.replaceAll("_", " ")}</strong> · Local expiry: {new Date(agent.expiresAt!).toLocaleString()}</p>
-      {agent.status === "not_authorized" && <>
-        <label className="purchase-confirm"><input type="checkbox" disabled={busy} checked={reviewed} onChange={e => setReviewed(e.target.checked)}/> I authorize this local agent to trade for my account for up to 7 days. This permission is not limited to the draft budget.</label>
-        <Button disabled={busy || !reviewed} onClick={() => void run(approve)}>Approve agent in wallet</Button>
+      {agent.coverage===false && <p role="alert" className="error">Authorization does not cover the entire strategy. Required through {new Date(agent.requiredUntil!).toLocaleString()}. Renew before the next purchase.</p>}
+      {agent.coverage===true && <p>Authorization covers the entire saved strategy and displayed draft.</p>}
+      {!agent.canAuthorize && <p role="alert" className="error">The schedule exceeds the supported authorization window (179 days). Shorten the strategy before authorizing.</p>}
+      {agent.canAuthorize && ["not_authorized","authorized"].includes(agent.status || "") && agent.coverage!==true && <>
+        <label className="purchase-confirm"><input type="checkbox" disabled={busy} checked={reviewed} onChange={e => setReviewed(e.target.checked)}/> I authorize this local agent to trade for my account until {new Date(agent.requestedUntil!).toLocaleString()} (final purchase plus five minutes). This permission is not limited to the draft budget.</label>
+        <Button disabled={busy || !reviewed} onClick={() => void run(approve)}>Authorize through final purchase</Button>
       </>}
       {["expired", "revoked"].includes(agent.status || "") && <p>Create a fresh agent key before future use. Do not reuse an expired or revoked agent.</p>}
       <p>Start and pause recurring execution in Scheduled DCA. To revoke trading access, remove this agent in Hyperliquid’s API settings. Pausing a strategy will not revoke its permission.</p>

@@ -8,6 +8,7 @@ import {preparePurchase} from "@/lib/trading/prepare";
 import {getAgent} from "@/lib/agent/store";
 import {info} from "@/lib/hyperliquid/client";
 import {lastResult} from "@/lib/trading/journal";
+import {requiredAgentExpiry,coversStrategy} from "@/lib/agent/coverage";
 export const runtime="nodejs";
 const schema=z.object({account:z.string().regex(/^0x[0-9a-f]{40}$/),action:z.enum(["status","start","pause","resume"]),expectedId:z.string().uuid().nullable().optional(),configuration:runtimeInput.optional()});
 export async function POST(request:Request){
@@ -32,6 +33,8 @@ export async function POST(request:Request){
    const agent=getAgent(input.account,false);
    const agents=await info({type:"extraAgents",user:input.account},z.array(z.object({address:z.string(),validUntil:z.number().nullable()})));
    if(!agent || agent.expiresAt<=Date.now() || !agents.some(a=>a.address.toLowerCase()===agent.address.toLowerCase() && (a.validUntil===null || a.validUntil>Date.now())))return Response.json({error:"Authorize a valid local agent first."},{status:409});
+   const approved=agents.find(a=>a.address.toLowerCase()===agent.address.toLowerCase());
+   if(!approved || !coversStrategy(agent.expiresAt,approved.validUntil,requiredAgentExpiry(config.plan)))return Response.json({error:"Agent authorization expires before the final purchase. Use Authorize through final purchase in Local API agent, then confirm this strategy again."},{status:409});
    const quote=await preparePurchase({account:input.account,amount:config.plan.amount,btcPercent:config.plan.btcPercent,slippageBps:config.slippageBps});
    if(quote.blockers.length)return Response.json({error:quote.blockers.join(" ")},{status:422});
    if(input.action==="resume"){

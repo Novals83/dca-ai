@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, linkSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, linkSync, unlinkSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -41,4 +41,16 @@ export function loadAgentSigner(account: string) {
   const stored = schema.parse(JSON.parse(readFileSync(join(directory, `${account}.json`), "utf8")));
   if (stored.account !== account || stored.expiresAt <= Date.now()) throw new Error("Agent unavailable");
   return privateKeyToAccount(stored.privateKey as `0x${string}`);
+}
+
+// Update local policy only after the route verifies the exchange authorization.
+export function syncAgentExpiry(account:string,address:string,expiresAt:number,directory=process.env.AGENT_DATA_DIR || "/app/.agent-data") {
+ if (!/^0x[0-9a-f]{40}$/.test(account) || !Number.isSafeInteger(expiresAt)) throw new Error("Invalid agent expiry");
+ const path=join(directory,`${account}.json`);
+ const stored=schema.parse(JSON.parse(readFileSync(path,"utf8")));
+ if(privateKeyToAccount(stored.privateKey as `0x${string}`).address.toLowerCase()!==address.toLowerCase())throw new Error("Agent changed");
+ if(expiresAt<=stored.expiresAt)return;
+ const temporary=join(directory,`${randomUUID()}.tmp`);
+ writeFileSync(temporary,JSON.stringify({...stored,expiresAt}),{flag:"wx",mode:0o600});
+ renameSync(temporary,path);
 }

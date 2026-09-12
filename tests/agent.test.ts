@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { getAgent, markAgentAuthorized } from "../lib/agent/store";
+import { getAgent, markAgentAuthorized, syncAgentExpiry } from "../lib/agent/store";
 const directories: string[] = [];
 const directory = () => {const d = mkdtempSync(join(tmpdir(), "dca-agent-test-")); directories.push(d); return d;};
 const account = `0x${"1".repeat(40)}`;
@@ -28,4 +28,14 @@ describe("local agent custody", () => {
     const d = directory(); expect(() => getAgent("../secret", true, d)).toThrow();
     expect(getAgent(account, true, d)?.address).not.toBe(getAgent(`0x${"2".repeat(40)}`, true, d)?.address);
   });
+});
+
+it("syncs verified expiry without changing the signer or leaking its key",()=>{
+ const d=directory(); const first=getAgent(account,true,d)!;
+ syncAgentExpiry(account,first.address,first.expiresAt+86400000,d);
+ const next=getAgent(account,false,d)!;
+ expect(next.address).toBe(first.address);
+ expect(next.expiresAt).toBe(first.expiresAt+86400000);
+ expect(statSync(join(d,`${account}.json`)).mode & 0o777).toBe(0o600);
+ expect(()=>syncAgentExpiry(account,account,first.expiresAt+86400000,d)).toThrow();
 });

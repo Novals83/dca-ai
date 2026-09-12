@@ -102,7 +102,7 @@ export function TradingSetup({ onViewPortfolio, voiceDraft }: { voiceDraft?: DCA
       </form>
       <PerformancePanel key={connected.address} account={connected.address} />
       <SchedulerPanel key={`${connected.address}:${amount}:${budget}:${btcPercent}:${frequency}:${start}`} account={connected.address} provider={connected.wallet.provider} plan={parsed.success ? parsed.data : null} />
-      <AgentPanel key={connected.address} account={connected.address} provider={connected.wallet.provider} />
+      <AgentPanel key={`${connected.address}:${amount}:${budget}:${frequency}:${start}`} account={connected.address} provider={connected.wallet.provider} plan={parsed.success ? parsed.data : null} />
           <PurchasePanel key={`${connected.address}:${amount}:${btcPercent}`} provider={connected.wallet.provider} account={connected.address} amount={amount} btcPercent={btcPercent} />
     </>}
     {error && <p className="error" role="alert">{error}</p>}
