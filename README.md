@@ -25,7 +25,7 @@ After changing `.env`, run `docker compose up -d --force-recreate`.
 
 ## What works
 
-- Responsive landing and dashboard; demo portfolio with explicit fixed demo prices.
+- Responsive landing and dashboard; demo portfolio balances with live BTC/HYPE market quotes, refreshed every 15 seconds.
 - Public master/subaccount address input, standard main DEX perp equity, spot balances, net BTC/HYPE exposure, positions, open orders and recent fills in API context.
 - Live BTC perp mid and HYPE spot mid; HYPE resolves through spot metadata and pair indexes, not a hardcoded spot symbol.
 - Daily, weekly and monthly DCA, initial capital, 0–100% allocation, 1–24 months, 1–1.2x modeled leverage.
@@ -67,6 +67,6 @@ Open [localhost:3101](http://localhost:3101). `.env` is optional; omit `--env-fi
 
 See [calculation methodology](docs/CALCULATIONS.md), [architecture and editions](docs/ROADMAP.md), [upstream sources](docs/SOURCES.md) and [verification report](docs/VERIFICATION.md).
 
-Only standard Hyperliquid accounts are supported. Unified accounts, portfolio margin and DEX abstraction are explicitly rejected rather than presenting unreconciled equity. Vaults, staking, HIP-3 DEXs and linked subaccounts are excluded. Unknown spot prices are excluded with a visible warning. USDC card shows spot cash only. Prices and account snapshots may have slightly different timestamps and are not executable quotes. Refresh a connected portfolio manually for a new snapshot.
+Only standard Hyperliquid accounts are supported. Unified accounts, portfolio margin and DEX abstraction are explicitly rejected rather than presenting unreconciled equity. Vaults, staking, HIP-3 DEXs and linked subaccounts are excluded. Unknown spot prices are excluded with a visible warning. USDC card shows spot cash only. Prices and account snapshots may have slightly different timestamps and are not executable quotes. BTC/HYPE market quotes refresh automatically every 15 seconds, including in demo mode. Portfolio balances and position marks remain a separate snapshot; refresh a connected portfolio manually. USDC $1 is a peg reference, not a live quote.
 
 MVP1 is local, single-user software. Do not expose this development deployment publicly with a funded API key. Paid multi-user cloud hosting requires authentication, quotas, tenant isolation, durable storage and operational controls first. Local origin checks and in-memory request limits are not cloud authentication.

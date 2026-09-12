@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, vi } from "vitest";
 import { localReply } from "../lib/ai/copilot";
 import { getContext } from "../lib/ai/context";
 it("limited fallback does not turn capital into daily spending", async () => {
@@ -15,3 +15,5 @@ it("explicit daily command overrides weekly builder frequency", async () => {
     contributionFrequency: "daily",
   });
 });
+
+vi.mock("../lib/hyperliquid/market", () => ({ getMarket: vi.fn(async () => ({ BTC: 95000, HYPE: 40, source: "live", asOf: new Date().toISOString() })) }));

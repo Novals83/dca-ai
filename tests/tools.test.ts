@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, vi } from "vitest";
 import { getContext } from "../lib/ai/context";
 import { runTool } from "../lib/ai/tools";
 import { defaultStrategy } from "../lib/dca/simulator";
@@ -32,3 +32,5 @@ it("tool rejects invalid leverage", async () => {
     runTool("simulate_dca", { ...defaultStrategy, leverage: 10 }, c),
   ).toThrow();
 });
+
+vi.mock("../lib/hyperliquid/market", () => ({ getMarket: vi.fn(async () => ({ BTC: 95000, HYPE: 40, source: "live", asOf: new Date().toISOString() })) }));

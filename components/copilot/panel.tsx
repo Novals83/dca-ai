@@ -133,7 +133,7 @@ export function CopilotPanel({
       </div>
       <div className="copilot-status">
         <i />
-        {aiConfigured ? "AI CONNECTED" : "LOCAL TOOLS · NO API KEY"}
+        {aiConfigured ? "AI CONFIGURED" : "LOCAL TOOLS · NO API KEY"}
       </div>
       <div className="chat-scroll" aria-live="polite">
         {messages.length === 0 ? (
@@ -169,7 +169,7 @@ export function CopilotPanel({
               <br />
               <small>
                 {account === "demo"
-                  ? "Using clearly labeled demo data"
+                  ? "Demo balances · live market prices"
                   : "Read-only Hyperliquid account data"}
               </small>
             </div>

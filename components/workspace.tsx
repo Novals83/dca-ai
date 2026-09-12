@@ -70,6 +70,7 @@ export function Workspace({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [marketError, setMarketError] = useState("");
   const [scenario, setScenario] = useState(1);
   const [copilotOpen, setCopilotOpen] = useState<boolean | null>(null);
   const accountRequest = useRef(0);
@@ -97,6 +98,31 @@ export function Workspace({
           "Browser storage unavailable or invalid. Saving may be restricted.",
         ),
       );
+  }, []);
+  useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    async function refreshPrices() {
+      try {
+        const response = await fetch("/api/hyperliquid/market", {
+          cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(18000)]),
+        });
+        if (!response.ok) throw new Error("Market unavailable");
+        const next: Market = await response.json();
+        if (!disposed) {
+          setMarket(next);
+          setMarketError("");
+        }
+      } catch {
+        if (!disposed) setMarketError("Live prices unavailable. Displayed prices are not current; retrying automatically.");
+      } finally {
+        if (!disposed) timer = setTimeout(refreshPrices, 15000);
+      }
+    }
+    void refreshPrices();
+    return () => { disposed = true; controller.abort(); clearTimeout(timer); };
   }, []);
   const resultSchema = strategySchema.safeParse(strategy);
   const result = resultSchema.success
@@ -209,7 +235,6 @@ export function Workspace({
     setInsight("");
     setAccount("demo");
     setPortfolio(demoPortfolio);
-    setMarket(demoMarket);
     setStrategy(demoStrategy);
     setPreview(null);
     setSaved(demoStrategy);
@@ -353,6 +378,13 @@ export function Workspace({
               {error}
             </p>
           )}
+          <div className="positions-note" role="status">
+            {market.source === "live"
+              ? `${marketError ? "LAST PRICES" : "LIVE PRICES"} · Hyperliquid · ${new Date(market.asOf).toLocaleTimeString()} · updates every 15s`
+              : "Loading live prices · reference fixtures shown until connected"}
+            {account === "demo" && " · Portfolio balances are demo"}
+            {marketError && <p className="error">{marketError}</p>}
+          </div>
           <section id="overview" className="portfolio-grid">
             <div className="portfolio-hero card">
               <div className="section-label">
@@ -423,7 +455,7 @@ export function Workspace({
                   <div>
                     <strong>{a.coin}</strong>
                     <small>
-                      {a.name} · {money(a.price)}
+                      {a.name} · {money(a.price)}{a.coin === "USDC" ? " peg reference" : ""}
                     </small>
                   </div>
                   <div className="asset-value">
@@ -903,7 +935,7 @@ export function Workspace({
             )}
             <div className="positions-note">
               {account === "demo"
-                ? "Demo positions and reference prices are fixed fixtures. Connect an address to load live data."
+                ? "Portfolio balances and position marks are demo fixtures. BTC/HYPE market quotes above update independently. Connect an address for your real portfolio."
                 : `Snapshot includes ${portfolio.openOrders.length} open orders and ${portfolio.recentFills.length} recent fills. USDC card is spot cash only; perp equity is included in the portfolio total.`}
             </div>
             {portfolio.warnings.map((w) => (

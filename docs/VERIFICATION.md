@@ -24,3 +24,12 @@
 
 Local development: http://localhost:3100
 Local production: http://localhost:3101
+
+
+## Live activation — 2026-09-12
+
+- Project key loaded at runtime from ignored local `.env`; never included in source or image.
+- Both configured models returned HTTP 200 from the OpenAI models endpoint.
+- Browser WebRTC session creation returned HTTP 201 and reached `listening` after `session.started`; test session was stopped. Spoken reply quality and a full spoken delegation round trip still require a user microphone conversation.
+- Text Copilot returned `provider: openai` and `get_market_prices` with live BTC/HYPE prices.
+- Market quotes now refresh independently of the demo portfolio every 15 seconds. Fetch failures are labeled; AI context does not silently substitute demo quotes.

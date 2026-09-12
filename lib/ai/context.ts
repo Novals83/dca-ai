@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { strategySchema, simulateDCA, defaultStrategy } from "../dca/simulator";
-import { demoMarket, demoPortfolio } from "../demo";
+import { demoPortfolio } from "../demo";
 import { addressSchema } from "../hyperliquid/client";
 import { getPortfolio } from "../hyperliquid/portfolio";
 import { getMarket } from "../hyperliquid/market";
@@ -10,10 +10,10 @@ export const contextSchema = z.object({
 });
 export type ContextRequest = z.infer<typeof contextSchema>;
 export async function getContext(input: ContextRequest) {
-  const [portfolio, market] =
-    input.account === "demo"
-      ? [demoPortfolio, demoMarket]
-      : await Promise.all([getPortfolio(input.account), getMarket()]);
+  const [portfolio, market] = await Promise.all([
+    input.account === "demo" ? Promise.resolve(demoPortfolio) : getPortfolio(input.account),
+    getMarket(),
+  ]);
   const strategy = input.strategy ?? defaultStrategy;
   return {
     portfolio,
