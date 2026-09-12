@@ -2,8 +2,10 @@
 
 ## Language
 
-- Use English for all new and edited project content: UI, tooltips, errors, documentation, comments, tests, commit messages, pull requests, and assistant updates.
-- The in-app text and voice assistants respond in English for now.
+- Use English for all new and edited project content: UI, tooltips, errors, documentation, comments, tests, commit messages, pull requests.
+- Conversation with the project owner may be in Russian; respond in the language they use.
+- The voice assistant responds in the language the user speaks, switching when the user switches. Translate backend results into that language without changing figures or meaning.
+- The in-app text assistant and fixed interface messages remain in English unless requested otherwise.
 - Keep this policy until the user explicitly requests a language change or localization.
 
 ## Browser workflow
