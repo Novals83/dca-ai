@@ -4,6 +4,7 @@ import { ExchangeClient } from "@nktkas/hyperliquid";
 import { createWalletClient, custom } from "viem";
 import { Button } from "@/components/ui/button";
 import { walletAddress, type WalletProvider } from "@/lib/wallet/provider";
+import {walletError} from "@/lib/wallet/error";
 import type {DCAPlan} from "@/lib/dca/schedule";
 type Agent = {configured: boolean; requiredUntil?:number|null; requestedUntil?:number; canAuthorize?:boolean; coverage?:boolean|null; account?: string; address?: `0x${string}`; name?: string; expiresAt?: number; status?: string; validUntil?: number | null};
 export function AgentPanel({account, provider, plan}: {account: string; provider: WalletProvider; plan:DCAPlan|null}) {
@@ -27,7 +28,7 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
   async function run(action: () => Promise<void>) {
     if (working.current) return;
     working.current = true; setBusy(true); setMessage("");
-    try { await action(); } catch { if (active.current) setMessage("Operation was not confirmed. Refresh authorization status before trying again."); }
+    try { await action(); } catch (error) { if (active.current) setMessage(`${walletError(error)} Refresh authorization status before retrying.`); }
     finally {working.current = false; if (active.current) setBusy(false);}
   }
   async function approve() {
@@ -37,18 +38,24 @@ export function AgentPanel({account, provider, plan}: {account: string; provider
       if (!active.current || Date.now() >= expected.requestedUntil! || walletAddress(await provider.request({method: "eth_accounts"})) !== account) throw new Error("Wallet changed or authorization expired");
     };
     await check();
-    const client = new ExchangeClient({wallet: createWalletClient({account: account as `0x${string}`, transport: custom(provider)}), transport: {
+    const chainId=await provider.request({method:"eth_chainId"});
+    if(typeof chainId!=="string" || !/^0x[0-9a-f]+$/i.test(chainId))throw new Error("Wallet returned an invalid chain ID");
+    const client = new ExchangeClient({signatureChainId:chainId as `0x${string}`, wallet: createWalletClient({account: account as `0x${string}`, transport: custom(provider)}), transport: {
       isTestnet: false,
       async request<T>(endpoint: "info" | "exchange", payload: unknown): Promise<T> {
         if (endpoint !== "exchange") throw new Error("Unexpected endpoint");
         await check();
+        if(await provider.request({method:"eth_chainId"})!==chainId)throw new Error("Wallet network changed. Reconnect before authorizing.");
+        if(active.current)setMessage("Signature received. Submitting authorization to Hyperliquid…");
         const response = await fetch("https://api.hyperliquid.xyz/exchange", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload), signal: AbortSignal.timeout(20000)});
-        if (!response.ok) throw new Error("Authorization response unavailable");
+        if (!response.ok) throw new Error(`Hyperliquid authorization HTTP ${response.status}. Refresh status before retrying.`);
         return await response.json() as T;
       },
     }});
+    if(active.current)setMessage("Confirm the agent authorization signature in your wallet…");
     await client.approveAgent({agentAddress: agent.address, agentName: `${agent.name} valid_until ${agent.requestedUntil}`});
-    await status(false);
+    const result=await status(false);
+    if(active.current)setMessage(result.coverage===true ? "Authorization verified. The entire strategy is covered." : "Hyperliquid accepted the request, but extended authorization is not yet verified. Refresh authorization status.");
   }
   return <section className="plan-review">
     <h3>Local API agent · Mainnet</h3>
