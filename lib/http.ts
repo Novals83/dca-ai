@@ -35,7 +35,7 @@ export function apiError(error: unknown) {
     {
       error:
         status === 422
-          ? "This account uses unified, portfolio margin or DEX abstraction. MVP1 supports standard accounts only; use Demo to explore strategies."
+          ? "This account uses portfolio margin or legacy DEX abstraction. Portfolio view supports standard and unified accounts."
           : status === 400
             ? "Check the address and input values."
             : status === 429

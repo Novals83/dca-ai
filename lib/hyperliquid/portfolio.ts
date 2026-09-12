@@ -33,6 +33,7 @@ export function normalizePortfolio(
   spot: SpotState,
   meta: SpotMeta,
   mids: Record<string, number>,
+  mode: "standard" | "unifiedAccount" = "standard",
 ): Portfolio {
   const warnings: string[] = [];
   const positions: Position[] = perp.assetPositions.flatMap(
@@ -79,7 +80,17 @@ export function normalizePortfolio(
       markPrice: price,
     });
   }
-  const accountValue = perp.marginSummary.accountValue + spotValue;
+  // Unified collateral already lives in spot balances; never add per-DEX equity.
+  const accountValue = mode === "unifiedAccount" ? spotValue : perp.marginSummary.accountValue + spotValue;
+  let withdrawable = perp.withdrawable;
+  if (mode === "unifiedAccount") {
+    const usdc = meta.tokens.find(t => t.name === "USDC");
+    const cash = spot.balances.find(b => b.token === usdc?.index);
+    const available = spot.tokenToAvailableAfterMaintenance?.find(([token]) => token === usdc?.index)?.[1];
+    withdrawable = available === undefined ? 0 : Math.max(0, Math.min(available, cash ? cash.total - cash.hold : 0));
+    warnings.push("Unified account: equity uses spot balances once. Available USDC reflects holds and maintenance requirements; per-DEX equity is not added.");
+    if (available === undefined) warnings.push("Available unified USDC is unavailable; displayed as zero.");
+  }
   const totalExposure = positions.reduce(
     (sum, p) => sum + Math.abs(p.usdValue),
     0,
@@ -92,12 +103,12 @@ export function normalizePortfolio(
         0,
       );
   warnings.push(
-    "Covers standard main DEX perps and spot only; excludes vaults, staking, other DEXs and linked subaccounts.",
+    "Balances cover spot assets; perpetual positions and exposure cover the main DEX only. Excludes vaults, staking, other DEX positions and linked subaccounts.",
   );
   return {
     address,
     accountValue,
-    withdrawable: perp.withdrawable,
+    withdrawable,
     btcExposure: exposure("BTC") + exposure("UBTC"),
     hypeExposure: exposure("HYPE"),
     usdcBalance,
@@ -124,7 +135,6 @@ export async function getPortfolio(address: string) {
     ]),
   );
   if (
-    mode === "unifiedAccount" ||
     mode === "portfolioMargin" ||
     mode === "dexAbstraction"
   )
@@ -135,7 +145,7 @@ export async function getPortfolio(address: string) {
     getSpotMeta(),
     getAllMids(),
   ]);
-  const portfolio = normalizePortfolio(address, perp, spot, meta, mids);
+  const portfolio = normalizePortfolio(address, perp, spot, meta, mids, mode === "unifiedAccount" ? "unifiedAccount" : "standard");
   const [orders, fills] = await Promise.allSettled([
     getOpenOrders(address),
     getUserFills(address),

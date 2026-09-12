@@ -67,7 +67,7 @@ Open [localhost:3101](http://localhost:3101). `.env` is optional; omit `--env-fi
 
 See [calculation methodology](docs/CALCULATIONS.md), [architecture and editions](docs/ROADMAP.md), [upstream sources](docs/SOURCES.md) and [verification report](docs/VERIFICATION.md).
 
-Only standard Hyperliquid accounts are supported. Unified accounts, portfolio margin and DEX abstraction are explicitly rejected rather than presenting unreconciled equity. Vaults, staking, HIP-3 DEXs and linked subaccounts are excluded. Unknown spot prices are excluded with a visible warning. USDC card shows spot cash only. Prices and account snapshots may have slightly different timestamps and are not executable quotes. BTC/HYPE market quotes refresh automatically every 15 seconds, including in demo mode. Portfolio balances and position marks remain a separate snapshot; refresh a connected portfolio manually. USDC $1 is a peg reference, not a live quote.
+Standard and unified Hyperliquid accounts are supported. Portfolio margin and legacy DEX abstraction are explicitly rejected. Unified equity uses spot balances once; per-DEX equity is not added. Vaults, staking, HIP-3 DEXs and linked subaccounts are excluded. Unknown spot prices are excluded with a visible warning. USDC card shows spot cash only. Prices and account snapshots may have slightly different timestamps and are not executable quotes. BTC/HYPE market quotes refresh automatically every 15 seconds, including in demo mode. Portfolio balances and position marks remain a separate snapshot; refresh a connected portfolio manually. USDC $1 is a peg reference, not a live quote.
 
 MVP1 is local, single-user software. Do not expose this development deployment publicly with a funded API key. Paid multi-user cloud hosting requires authentication, quotas, tenant isolation, durable storage and operational controls first. Local origin checks and in-memory request limits are not cloud authentication.
 
@@ -118,7 +118,7 @@ References: [Hyperliquid API wallets and nonce lifecycle](https://hyperliquid.gi
 
 ### Unified accounts and spot purchases
 
-Manual spot preparation supports standard and unified accounts. For unified accounts, purchasing power is capped by both unheld USDC and Hyperliquid's `tokenToAvailableAfterMaintenance` value. Missing availability blocks preparation; negative values yield zero buying power. This does not change the account mode or transfer collateral. Portfolio margin and legacy DEX abstraction remain unsupported. The portfolio analytics view still supports standard accounts only; unified spot execution is a separate path.
+Manual spot preparation supports standard and unified accounts. For unified accounts, purchasing power is capped by both unheld USDC and Hyperliquid's `tokenToAvailableAfterMaintenance` value. Missing availability blocks preparation; negative values yield zero buying power. This does not change the account mode or transfer collateral. Portfolio margin and legacy DEX abstraction remain unsupported. The portfolio view also supports unified accounts: shared collateral is counted once, while perpetual positions and exposure currently cover the main DEX only.
 
 [Account abstraction modes](https://hyperliquid.gitbook.io/hyperliquid-docs/trading/account-abstraction-modes)
 
