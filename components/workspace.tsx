@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/dialog";
+import { TradingSetup } from "./trading/setup";
 import { Avatar } from "./copilot/avatar";
 import { CopilotPanel } from "./copilot/panel";
 import {
@@ -60,6 +61,7 @@ export function Workspace({
   initialConnect?: boolean;
 }) {
   const [account, setAccount] = useState("demo");
+  const [mode, setMode] = useState<"analysis" | "dca">("analysis");
   const [portfolio, setPortfolio] = useState<Portfolio>(demoPortfolio);
   const [market, setMarket] = useState<Market>(demoMarket);
   const [strategy, setStrategy] = useState<Strategy>(demoStrategy);
@@ -359,6 +361,12 @@ export function Workspace({
           </span>
         </nav>
         <main className="dashboard">
+          <div className="mode-switch" role="group" aria-label="Application mode">
+            <button aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>Portfolio & simulation</button>
+            <button aria-pressed={mode === "dca"} onClick={() => setMode("dca")}>DCA setup</button>
+          </div>
+          {mode === "dca" && <TradingSetup onViewPortfolio={target => { setMode("analysis"); void loadAccount(target); }} />}
+          <div hidden={mode !== "analysis"}>
           <div className="page-heading">
             <div>
               <span className="eyebrow">YOUR CAPITAL. YOUR DIRECTION.</span>
@@ -965,6 +973,7 @@ export function Workspace({
               </p>
             ))}
           </section>
+          </div>
           <footer>
             DCA AI provides analytical and educational tools, not personalized
             financial advice. Crypto assets and leveraged positions involve

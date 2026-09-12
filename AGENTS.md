@@ -16,3 +16,10 @@
 - Never start the microphone automatically. The user starts voice with Start voice.
 - Do not change browser-wide startup settings without an explicit request. Recommend Continue where you left off to restore the session.
 - Do not trade, sign transactions, or change exchange account settings while testing the interface.
+
+## DCA implementation
+
+- The user selected mainnet spot purchases with USDC, without leverage.
+- Build real trading software in stages; validate code without initiating real purchases on the user's account.
+- Stage 1 provides wallet discovery and per-address browser drafts with UTC schedules. It does not execute orders or run a scheduler; keep this limitation visible.
+- Keep purchase-plan configuration separate from the simulation builder and AI previews until explicit confirmation flows connect them.

@@ -79,3 +79,11 @@ Open the MVP and Hyperliquid in Chrome Split view. Right-click the **Hyperliquid
 Keep the pair open. Chrome's **Settings → On startup → Continue where you left off** restores the previous browsing session; the app does not modify this browser-wide preference. Start the microphone explicitly using **Start voice**.
 
 [Chrome Split view instructions](https://support.google.com/chrome/answer/16971124?hl=en)
+
+## DCA setup (stage 1)
+
+Select **DCA setup** to discover EIP-6963 browser wallets (including MetaMask). Connect explicitly, then choose an installment amount in USDC, total order budget, BTC/HYPE allocation, cadence and first purchase time in UTC. Only spot plans are supported. Monthly schedules preserve the original day and clamp short months. Budgets include whole installments only; fees require additional funds.
+
+**Save DCA draft** persists the plan in this browser, separately for each wallet address. Wallet/account/network changes invalidate the connection. These are configuration drafts, not running jobs: no signatures, API-agent permissions, exchange orders or cron workers are created. Voice currently controls simulation previews, not purchase drafts.
+
+Next integration stages: live spot pair resolution and order sizing; explicit wallet authorization and one-purchase execution; durable container scheduling with budget reservations, idempotent order IDs, reconciliation and Start/Pause controls. Do not label a draft as running before that execution path exists.
