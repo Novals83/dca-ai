@@ -33,3 +33,12 @@ export function markAgentAuthorized(account: string, directory = process.env.AGE
   try { writeFileSync(join(directory, `${account}.authorized`), "observed", {flag: "wx", mode: 0o600}); }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw new Error("Agent storage unavailable"); }
 }
+
+// Return a local signer only to server execution code. Never return this from a route.
+export function loadAgentSigner(account: string) {
+  if (!/^0x[0-9a-f]{40}$/.test(account)) throw new Error("Invalid account");
+  const directory = process.env.AGENT_DATA_DIR || "/app/.agent-data";
+  const stored = schema.parse(JSON.parse(readFileSync(join(directory, `${account}.json`), "utf8")));
+  if (stored.account !== account || stored.expiresAt <= Date.now()) throw new Error("Agent unavailable");
+  return privateKeyToAccount(stored.privateKey as `0x${string}`);
+}

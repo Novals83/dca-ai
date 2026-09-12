@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { WalletProvider } from "@/lib/wallet/provider";
 import type { Quote } from "@/lib/trading/quote";
-import { executePurchase, recordKey, type PurchaseRecord } from "@/lib/trading/execute";
+import { executePurchase, refreshPurchase, recordKey, type PurchaseRecord } from "@/lib/trading/execute";
 export function PurchasePanel({provider, account, amount, btcPercent}: {provider: WalletProvider; account: string; amount: number; btcPercent: number}) {
   const [slippageBps, setSlippage] = useState(50);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -44,7 +44,7 @@ export function PurchasePanel({provider, account, amount, btcPercent}: {provider
   const unresolved = record && ["pending", "unknown"].includes(record.state);
   return <div className="plan-review">
     <h3>One-time spot purchase · Mainnet</h3>
-    <p>This purchase is separate from your draft schedule and its budget. It does not activate recurring buys. BTC allocation buys <strong>UBTC (Unit Bitcoin)</strong>, not a BTC perpetual contract.</p>
+    <p>Your authorized local API agent signs this purchase inside the container. This purchase is separate from your draft schedule and its budget. It does not activate recurring buys. BTC allocation buys <strong>UBTC (Unit Bitcoin)</strong>, not a BTC perpetual contract.</p>
     <label>Maximum price slippage <select disabled={busy} value={slippageBps} onChange={e => {setSlippage(Number(e.target.value)); setQuote(null); setConfirmed(false);}}><option value={10}>0.1%</option><option value={50}>0.5%</option><option value={100}>1%</option></select></label>
     <p>Uses the current installment amount and allocation. A 1% fee reserve is included inside this amount. Orders are immediate-or-cancel and may fill partially or independently.</p>
     <Button type="button" disabled={busy || !!unresolved || !Number.isFinite(amount) || amount < 10 || !Number.isInteger(btcPercent)} onClick={() => void prepare()}>Prepare purchase</Button>
@@ -55,13 +55,14 @@ export function PurchasePanel({provider, account, amount, btcPercent}: {provider
       {quote.blockers.map(blocker => <p className="error" key={blocker}>{blocker}</p>)}
       {!quote.blockers.length && <>
         <label className="purchase-confirm"><input type="checkbox" checked={confirmed} disabled={busy} onChange={e => setConfirmed(e.target.checked)} /> I reviewed these real mainnet purchases, the UBTC asset, and the maximum debit.</label>
-        <Button type="button" disabled={!confirmed || busy} onClick={() => void submit()}>{busy ? "Waiting for wallet / exchange…" : "Sign and buy once"}</Button>
+        <Button type="button" disabled={!confirmed || busy} onClick={() => void submit()}>{busy ? "Submitting through local agent…" : "Confirm and buy via agent"}</Button>
       </>}
     </>}
     {record && <div><h4>Last purchase: {record.state.toUpperCase()}</h4>
       {unresolved && <p className="error">Submission may have reached the exchange. New purchases are blocked. Check the client order IDs in Hyperliquid; do not retry blindly.</p>}
-      {record.state === "not_sent" ? <p>No order was sent to Hyperliquid. The message below describes the signing or pre-submission failure. Manual purchases currently request a browser-wallet signature even if an API agent is authorized.</p> : <p>A response is not a guarantee that both assets filled. Check each filled size, average price or error below.</p>}
+      {record.state === "not_sent" ? <p>No order was sent to Hyperliquid. The message below describes the signing or pre-submission failure. This purchase uses the authorized local API agent; no browser-wallet trade signature is requested.</p> : <p>A response is not a guarantee that both assets filled. Check each filled size, average price or error below.</p>}
       <pre className="purchase-result">{JSON.stringify(record.response ?? {clientOrderIds: record.quote.legs.map(l => l.cloid)}, null, 2)}</pre>
+      <Button disabled={busy} onClick={() => { if (action.current) return; action.current = true; setBusy(true); setError(""); void refreshPurchase(record.quote).then(result => {if (active.current) {if (result) setRecord(result); else setError("No server result found. Do not retry an uncertain purchase.");}}).catch(() => {if (active.current) setError("Could not refresh the server result.");}).finally(() => {action.current = false; if (active.current) setBusy(false);}); }}>Refresh result</Button>
       <p className="small">Client order IDs: {record.quote.legs.map(l => l.cloid).join(", ")}</p>
       <a href="https://app.hyperliquid.xyz/portfolio" target="_blank" rel="noopener noreferrer">Check Hyperliquid history ↗</a>
     </div>}

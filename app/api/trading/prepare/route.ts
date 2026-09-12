@@ -5,6 +5,7 @@ import { readBody, apiError } from "@/lib/http";
 import { info } from "@/lib/hyperliquid/client";
 import { purchaseSchema, spotMetaSchema, resolveSpot, sizeBuy, type Quote, type PreparedLeg } from "@/lib/trading/quote";
 import { tradingSpotSchema, purchaseBalance } from "@/lib/trading/balance";
+import { persistQuote } from "@/lib/trading/journal";
 const numberText = z.string().regex(/^\d+(\.\d+)?$/);
 export async function POST(request: Request) {
   try {
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const maxDebit = legs.reduce((sum, leg) => sum.plus(leg.notional), new Decimal(0)).mul("1.01");
     if (available.lt(maxDebit)) blockers.push("Insufficient available spot USDC for this purchase and fee reserve.");
     const result: Quote = {...input, accountMode: mode, id: randomUUID(), expiresAt: Date.now() + 60000, availableUSDC: available.toFixed(), maxDebit: maxDebit.toFixed(), legs, blockers};
+    persistQuote(result);
     return Response.json(result, {headers: {"Cache-Control": "no-store"}});
   } catch (e) { return apiError(e); }
 }

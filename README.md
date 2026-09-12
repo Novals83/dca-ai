@@ -2,7 +2,7 @@
 
 [Public repository](https://github.com/Novals83/dca-ai)
 
-Local-first portfolio intelligence and BTC + HYPE accumulation simulations. Manual, wallet-confirmed mainnet spot purchases are available in DCA setup. Recurring execution is not connected yet; private keys stay in your wallet. The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
+Local-first portfolio intelligence and BTC + HYPE accumulation simulations. Manual, user-confirmed mainnet spot purchases through a local API agent are available in DCA setup. Recurring execution is not connected yet; private keys stay in your wallet. The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
 
 ## Run in a fresh container
 
@@ -92,15 +92,15 @@ Next integration stage: durable container scheduling with budget reservations, i
 
 After connecting a browser wallet in **DCA setup**, choose the amount/allocation and click **Prepare purchase**. The server reads verified UBTC/USDC and HYPE/USDC markets, fresh asks, account mode and available spot USDC. It rounds sizes/prices to exchange precision, reserves 1% within each allocation for fees, and blocks insufficient balances or allocations below the $10 minimum. The reserve is an estimate, not a quoted fee.
 
-Review the 60-second quote, check the confirmation box, then click **Sign and buy once**. The wallet signs through the Hyperliquid SDK; the browser sends the signed IOC batch directly to the official mainnet exchange. Orders can fill partially or return independent errors. This action is separate from the saved schedule and does not consume its draft budget. BTC allocation purchases **UBTC (Unit Bitcoin)**.
+Review the 60-second quote, check the confirmation box, then click **Confirm and buy via agent**. The server signs the stored quote through the Hyperliquid SDK using the approved local agent and sends the IOC batch to the official mainnet exchange. Orders can fill partially or return independent errors. This action is separate from the saved schedule and does not consume its draft budget. BTC allocation purchases **UBTC (Unit Bitcoin)**.
 
-A browser journal and per-wallet Web Lock prevent concurrent submissions and replay of the same quote. A timeout after dispatch is UNKNOWN and blocks further purchases; it is never automatically retried. Inspect the saved client order IDs in exchange history. Automated reconciliation and recovery are still pending. The journal is local to this browser and origin, not shared across devices. Clearing browser data removes this protection. No private key, API-agent permission, automatic purchase or scheduler is created.
+A browser journal and per-wallet Web Lock prevent concurrent submissions and replay of the same quote. A timeout after dispatch is UNKNOWN and blocks further purchases; it is never automatically retried. Inspect the saved client order IDs in exchange history. Automated reconciliation and recovery are still pending. The journal is local to this browser and origin, not shared across devices. Clearing browser data removes this protection. A separately approved local API agent is required. Confirming one purchase does not start a scheduler.
 
 Tests use mocked signing/network responses; no real wallet signatures or purchases are performed during validation.
 
 ## Local API agent (stage 3)
 
-In **DCA setup**, connect the master wallet, then **Prepare local agent**. This creates a dedicated key locally; it does not register permissions or start purchases. Review the public address and seven-day expiry, then explicitly select **Approve agent in wallet**. **Refresh authorization** reads `extraAgents` using the master address and verifies registration. The worker is not connected yet.
+In **DCA setup**, connect the master wallet, then **Prepare local agent**. This creates a dedicated key locally; it does not register permissions or start purchases. Review the public address and seven-day expiry, then explicitly select **Approve agent in wallet**. **Refresh authorization** reads `extraAgents` using the master address and verifies registration. Manual execution uses the approved agent; the recurring worker is not connected yet.
 
 Agent trading permission is broader than a DCA plan. Spot-only rules, budget limits and scheduling are application controls, not exchange-enforced restrictions on that key. Revocation is performed in Hyperliquid's API settings. A previously observed revoked agent or an expired agent is blocked; future rotation must create a fresh key, never reuse a pruned address.
 
@@ -121,3 +121,11 @@ References: [Hyperliquid API wallets and nonce lifecycle](https://hyperliquid.gi
 Manual spot preparation supports standard and unified accounts. For unified accounts, purchasing power is capped by both unheld USDC and Hyperliquid's `tokenToAvailableAfterMaintenance` value. Missing availability blocks preparation; negative values yield zero buying power. This does not change the account mode or transfer collateral. Portfolio margin and legacy DEX abstraction remain unsupported. The portfolio analytics view still supports standard accounts only; unified spot execution is a separate path.
 
 [Account abstraction modes](https://hyperliquid.gitbook.io/hyperliquid-docs/trading/account-abstraction-modes)
+
+### Agent execution and durable purchase journal
+
+Production image: `dca-ai:0.4.0`, with the same `dca-ai-agent-data:/app/.agent-data` volume. Preparing a purchase stores its immutable quote in the volume. Confirmation submits only its ID and account; client-provided prices or quantities are never accepted for execution. The server rechecks authorization, expiry, available USDC and spot market identity before signing. Master account addresses are used for info queries; only the dedicated agent signs orders.
+
+Execution results and a per-account lock live in the volume. Repeated requests for a recorded quote return its existing result without sending again. Unknown results block new purchases. **Refresh result** retrieves the server journal after browser/network interruptions; it does not resend or reconcile unknown exchange outcomes. A crash can leave a lock or pending result that requires operator reconciliation before recovery. Never delete these blindly. Automatic exchange reconciliation and recurring execution remain pending.
+
+The execution endpoint requires a matching loopback Origin. This is local single-user software; it is not a multi-user authorization model. Keep the loopback-only port binding. Tests use ephemeral keys and mocked transports; no funded key is used for test signing.
