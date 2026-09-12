@@ -9,6 +9,7 @@ import {
 } from "../dca/simulator";
 import type { CopilotContext } from "./context";
 export const toolNames = [
+  "get_execution_status",
   "get_portfolio",
   "get_market_prices",
   "simulate_dca",
@@ -42,6 +43,7 @@ export const aiTools = toolNames.map((name) => ({
   name,
   description: {
     create_dca_draft: "Create a recurring spot DCA draft for UI review. Does not start, change or pause execution. Ask for budget and UTC start time if missing.",
+    get_execution_status:"Read saved running DCA status, next purchase, schedule, execution history, local agent expiry and latest accounting snapshot. This is separate from the simulation builder.",
     get_portfolio: "Get the verified portfolio and exposures.",
     get_market_prices: "Get reference BTC perp mid and HYPE spot mid prices.",
     simulate_dca:
@@ -103,6 +105,7 @@ export function runTool(
     });
   switch (name) {
     case "create_dca_draft": return {draft:dcaDraftSchema.parse(args),status:"draft_only",nextStep:"Review in DCA setup, connect wallet and click Start DCA strategy. No execution has been started."};
+    case "get_execution_status": return context.execution;
     case "get_portfolio":
       return context.portfolio;
     case "get_market_prices":

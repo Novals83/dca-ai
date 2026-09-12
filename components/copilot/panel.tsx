@@ -98,6 +98,7 @@ export function CopilotPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             account: state.account,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             strategy: state.strategy,
             message:
               "Respond to the latest request in this voice transcript. It may contain overlapping fragments: " +
