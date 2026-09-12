@@ -8,7 +8,7 @@ export const purchaseSchema = z.object({
 });
 export type Purchase = z.infer<typeof purchaseSchema>;
 export type PreparedLeg = { symbol: string; asset: number; coin: string; price: string; size: string; notional: string; referenceAsk: string; cloid: `0x${string}` };
-export type Quote = { id: string; account: string; amount: number; btcPercent: number; slippageBps: number; expiresAt: number; availableUSDC: string; maxDebit: string; legs: PreparedLeg[]; blockers: string[] };
+export type Quote = { accountMode?: string; id: string; account: string; amount: number; btcPercent: number; slippageBps: number; expiresAt: number; availableUSDC: string; maxDebit: string; legs: PreparedLeg[]; blockers: string[] };
 export const spotMetaSchema = z.object({
   tokens: z.array(z.object({ name: z.string(), index: z.number().int(), szDecimals: z.number().int().min(0).max(8), tokenId: z.string() })),
   universe: z.array(z.object({ name: z.string(), index: z.number().int().nonnegative(), tokens: z.array(z.number().int()) })),

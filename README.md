@@ -115,3 +115,9 @@ docker run -d --name dca-ai-production --restart unless-stopped \
 Do not delete the volume during container updates. Development and production have separate agent stores. This local single-user endpoint requires a matching loopback Origin and is not a multi-user authentication system. Keys are not encrypted at rest; protect the Docker host and its backups. Agent files are excluded from Git and Docker build context. No agent private key is returned to the browser, voice model or GitHub.
 
 References: [Hyperliquid API wallets and nonce lifecycle](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/nonces-and-api-wallets), [agent authorization](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint#approve-an-api-wallet).
+
+### Unified accounts and spot purchases
+
+Manual spot preparation supports standard and unified accounts. For unified accounts, purchasing power is capped by both unheld USDC and Hyperliquid's `tokenToAvailableAfterMaintenance` value. Missing availability blocks preparation; negative values yield zero buying power. This does not change the account mode or transfer collateral. Portfolio margin and legacy DEX abstraction remain unsupported. The portfolio analytics view still supports standard accounts only; unified spot execution is a separate path.
+
+[Account abstraction modes](https://hyperliquid.gitbook.io/hyperliquid-docs/trading/account-abstraction-modes)

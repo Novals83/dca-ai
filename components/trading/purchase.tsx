@@ -49,7 +49,7 @@ export function PurchasePanel({provider, account, amount, btcPercent}: {provider
     <p>Uses the current installment amount and allocation. A 1% fee reserve is included inside this amount. Orders are immediate-or-cancel and may fill partially or independently.</p>
     <Button type="button" disabled={busy || !!unresolved || !Number.isFinite(amount) || amount < 10 || !Number.isInteger(btcPercent)} onClick={() => void prepare()}>Prepare purchase</Button>
     {quote && <>
-      <p>Available spot USDC: {quote.availableUSDC}. Maximum estimated debit including fee reserve: {quote.maxDebit} USDC.</p>
+      <p>Account mode: {quote.accountMode || "standard"}. Available USDC for this purchase: {quote.availableUSDC}. Maximum estimated debit including fee reserve: {quote.maxDebit} USDC.</p>
       {quote.legs.map(leg => <p key={leg.cloid}><strong>{leg.symbol}/USDC</strong> · buy {leg.size} · limit {leg.price} USDC · max notional {leg.notional} USDC</p>)}
       <p>Quote expires at {new Date(quote.expiresAt).toLocaleTimeString()}. Refresh it if signing takes too long.</p>
       {quote.blockers.map(blocker => <p className="error" key={blocker}>{blocker}</p>)}
