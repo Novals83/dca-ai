@@ -4,7 +4,13 @@
 
 Local-first portfolio intelligence and BTC + HYPE accumulation simulations. Manual, user-confirmed mainnet spot purchases through a local API agent are available in DCA setup. Recurring execution starts only after explicit confirmation; the dedicated agent key stays in a local Docker volume. The community edition is MIT licensed and free to self-host. OpenAI API use is billed separately to your own account.
 
-## Run in a fresh container
+## Install the complete local MVP (macOS / Windows)
+
+Start with **[INSTALL.md](docs/INSTALL.md)**. For another Codex agent, share **[CODEX_SETUP.md](docs/CODEX_SETUP.md)**. Use branch `codex/live-prices-voice` until the MVP is merged into main.
+
+Run `bash install.command` on macOS or `powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1` on Windows. This uses `compose.local.yaml`, production mode, port 3101, persistent agent data and an enabled scheduler. **OpenAI is optional**: wallet connection, manual DCA, schedules, execution and accounting work without it.
+
+## Developer hot-reload container (not the installer)
 
 Requires Docker Desktop / Docker Engine with Compose. No local Node installation needed.
 

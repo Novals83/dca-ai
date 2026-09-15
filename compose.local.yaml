@@ -1,0 +1,28 @@
+name: dca-ai-local
+services:
+  app:
+    build:
+      context: .
+      target: production
+    init: true
+    ports:
+      - "127.0.0.1:${DCA_PORT:-3101}:3000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_REASONING_MODEL: ${OPENAI_REASONING_MODEL:-gpt-5.4-mini}
+      OPENAI_LIVE_MODEL: ${OPENAI_LIVE_MODEL:-gpt-live-1}
+      DCA_WORKER_ENABLED: "1"
+      AGENT_DATA_DIR: /app/.agent-data
+      ACCOUNTING_STORAGE: ${ACCOUNTING_STORAGE:-file}
+      DATABASE_URL: ${DATABASE_URL:-}
+    volumes:
+      - agent-data:/app/.agent-data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+volumes:
+  agent-data:
