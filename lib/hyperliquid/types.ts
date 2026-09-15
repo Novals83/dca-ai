@@ -23,6 +23,7 @@ export const perpSchema = z.object({
   ),
 });
 export const spotSchema = z.object({
+  tokenToAvailableAfterMaintenance: z.array(z.tuple([z.number(), numeric])).optional(),
   balances: z.array(
     z.object({
       coin: z.string(),

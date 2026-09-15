@@ -9,3 +9,5 @@ artifacts/
 .DS_Store
 *.tsbuildinfo
 .git/
+
+.agent-data/

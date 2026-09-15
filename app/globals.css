@@ -1796,3 +1796,35 @@ footer i {
   border: 0;
   padding: 0;
 }
+
+/* Companion link remains available in Chrome's narrow split pane. */
+.exchange-link { white-space: nowrap; color: var(--accent); text-decoration: none; }
+.split-view-help { padding: 10px 30px; border-bottom: 1px solid var(--line); font-size: 12px; color: #9aabad; }
+.split-view-help summary { cursor: pointer; width: fit-content; }
+.split-view-help p { max-width: 780px; line-height: 1.6; margin: 10px 0 0; }
+@media (max-width: 750px) {
+  .app-shell .topbar { height: auto; min-height: 65px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+  .app-shell .top-actions { flex-wrap: wrap; }
+  .split-view-help { padding: 10px 18px; }
+}
+
+.mode-switch { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+.mode-switch button { padding: 10px 16px; border: 1px solid var(--line); border-radius: 8px; color: #9aabad; }
+.mode-switch button[aria-pressed="true"] { background: #17332e; color: var(--accent); border-color: var(--accent); }
+.dca-setup { padding: 24px; margin-bottom: 24px; }
+.dca-setup h2 { margin: 15px 0; }
+.dca-setup p { line-height: 1.6; margin: 14px 0; }
+.wallet-options { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.wallet-options p { width: 100%; }
+.wallet-connected { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 20px 0; }
+.wallet-connected code { overflow-wrap: anywhere; min-width: 0; font-size: 12px; }
+.plan-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.plan-fields label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #b0bec0; }
+.plan-fields input, .plan-fields select { background: #111a1f; border: 1px solid var(--line); border-radius: 6px; padding: 12px; color: white; min-width: 0; color-scheme: dark; }
+.plan-review { margin: 20px 0; padding: 15px; background: #111a1f; border-radius: 8px; font-size: 13px; }
+.plan-review ol { padding-left: 22px; line-height: 1.8; }
+@media(max-width: 750px) { .plan-fields { grid-template-columns: 1fr; } .dca-setup { padding: 16px; } }
+
+.purchase-confirm { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0; }
+.purchase-result { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow-y: auto; padding: 12px; background: #080e12; }
+.plan-review .small { overflow-wrap: anywhere; }

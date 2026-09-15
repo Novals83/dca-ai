@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/dialog";
+import type { DCADraft } from "@/lib/dca/draft";
+import { TradingSetup } from "./trading/setup";
 import { Avatar } from "./copilot/avatar";
 import { CopilotPanel } from "./copilot/panel";
 import {
@@ -60,16 +62,19 @@ export function Workspace({
   initialConnect?: boolean;
 }) {
   const [account, setAccount] = useState("demo");
+  const [mode, setMode] = useState<"analysis" | "dca">("analysis");
   const [portfolio, setPortfolio] = useState<Portfolio>(demoPortfolio);
   const [market, setMarket] = useState<Market>(demoMarket);
   const [strategy, setStrategy] = useState<Strategy>(demoStrategy);
   const [saved, setSaved] = useState<Strategy | null>(demoStrategy);
+  const [voiceDraft, setVoiceDraft] = useState<DCADraft | null>(null);
   const [preview, setPreview] = useState<Strategy | null>(null);
   const [connect, setConnect] = useState(initialConnect);
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [marketError, setMarketError] = useState("");
   const [scenario, setScenario] = useState(1);
   const [copilotOpen, setCopilotOpen] = useState<boolean | null>(null);
   const accountRequest = useRef(0);
@@ -97,6 +102,31 @@ export function Workspace({
           "Browser storage unavailable or invalid. Saving may be restricted.",
         ),
       );
+  }, []);
+  useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    async function refreshPrices() {
+      try {
+        const response = await fetch("/api/hyperliquid/market", {
+          cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(18000)]),
+        });
+        if (!response.ok) throw new Error("Market unavailable");
+        const next: Market = await response.json();
+        if (!disposed) {
+          setMarket(next);
+          setMarketError("");
+        }
+      } catch {
+        if (!disposed) setMarketError("Live prices unavailable. Displayed prices are not current; retrying automatically.");
+      } finally {
+        if (!disposed) timer = setTimeout(refreshPrices, 15000);
+      }
+    }
+    void refreshPrices();
+    return () => { disposed = true; controller.abort(); clearTimeout(timer); };
   }, []);
   const resultSchema = strategySchema.safeParse(strategy);
   const result = resultSchema.success
@@ -209,7 +239,6 @@ export function Workspace({
     setInsight("");
     setAccount("demo");
     setPortfolio(demoPortfolio);
-    setMarket(demoMarket);
     setStrategy(demoStrategy);
     setPreview(null);
     setSaved(demoStrategy);
@@ -278,7 +307,15 @@ export function Workspace({
         <span className="header-divider" />
         <span className="header-subtitle">HYPERLIQUID COPILOT</span>
         <div className="top-actions">
-          <span className="edition">COMMUNITY</span>
+          <a
+            className="account-button exchange-link"
+            href="https://app.hyperliquid.xyz/trade"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open Hyperliquid. For Split view: right-click → Open link in split view"
+          >
+            Hyperliquid <ArrowUpRight size={15} />
+          </a>
           <button className="account-button" onClick={() => setConnect(true)}>
             <Wallet size={15} />
             {account === "demo"
@@ -290,6 +327,19 @@ export function Workspace({
           </button>
         </div>
       </header>
+      <details className="split-view-help">
+        <summary>Open Hyperliquid alongside DCA AI</summary>
+        <p>
+          In Chrome, right-click the Hyperliquid link above and select
+          “Open link in split view”. If the exchange is already open, combine
+          the existing tabs using the tab menu. A normal click opens a new tab.
+        </p>
+        <p>
+          Keep this pair open. To restore your tabs after restarting Chrome:
+          Settings → On startup → Continue where you left off.
+          Start your microphone separately with Start voice.
+        </p>
+      </details>
       <div className="workspace-layout">
         <nav className="rail" aria-label="Sections">
           <a
@@ -313,6 +363,12 @@ export function Workspace({
           </span>
         </nav>
         <main className="dashboard">
+          <div className="mode-switch" role="group" aria-label="Application mode">
+            <button aria-pressed={mode === "analysis"} onClick={() => setMode("analysis")}>Portfolio & simulation</button>
+            <button aria-pressed={mode === "dca"} onClick={() => setMode("dca")}>DCA setup</button>
+          </div>
+          {mode === "dca" && <TradingSetup voiceDraft={voiceDraft} onViewPortfolio={target => { setMode("analysis"); void loadAccount(target); }} />}
+          <div hidden={mode !== "analysis"}>
           <div className="page-heading">
             <div>
               <span className="eyebrow">YOUR CAPITAL. YOUR DIRECTION.</span>
@@ -353,6 +409,13 @@ export function Workspace({
               {error}
             </p>
           )}
+          <div className="positions-note" role="status">
+            {market.source === "live"
+              ? `${marketError ? "LAST PRICES" : "LIVE PRICES"} · Hyperliquid · ${new Date(market.asOf).toLocaleTimeString()} · updates every 15s`
+              : "Loading live prices · reference fixtures shown until connected"}
+            {account === "demo" && " · Portfolio balances are demo"}
+            {marketError && <p className="error">{marketError}</p>}
+          </div>
           <section id="overview" className="portfolio-grid">
             <div className="portfolio-hero card">
               <div className="section-label">
@@ -423,7 +486,7 @@ export function Workspace({
                   <div>
                     <strong>{a.coin}</strong>
                     <small>
-                      {a.name} · {money(a.price)}
+                      {a.name} · {money(a.price)}{a.coin === "USDC" ? " peg reference" : ""}
                     </small>
                   </div>
                   <div className="asset-value">
@@ -903,7 +966,7 @@ export function Workspace({
             )}
             <div className="positions-note">
               {account === "demo"
-                ? "Demo positions and reference prices are fixed fixtures. Connect an address to load live data."
+                ? "Portfolio balances and position marks are demo fixtures. BTC/HYPE market quotes above update independently. Connect an address for your real portfolio."
                 : `Snapshot includes ${portfolio.openOrders.length} open orders and ${portfolio.recentFills.length} recent fills. USDC card is spot cash only; perp equity is included in the portfolio total.`}
             </div>
             {portfolio.warnings.map((w) => (
@@ -912,12 +975,13 @@ export function Workspace({
               </p>
             ))}
           </section>
+          </div>
           <footer>
             DCA AI provides analytical and educational tools, not personalized
             financial advice. Crypto assets and leveraged positions involve
             substantial risk.
             <span>
-              LOCAL FIRST <i /> READ ONLY <i /> OPEN SOURCE
+              LOCAL FIRST <i /> OPEN SOURCE
             </span>
           </footer>
         </main>
@@ -926,6 +990,7 @@ export function Workspace({
             key={account}
             account={account}
             strategy={resultSchema.success ? strategy : defaultStrategy}
+            onDcaDraft={draft => {setVoiceDraft(draft);setMode("dca");}}
             onPreview={onPreview}
             onClose={() => setCopilotOpen(false)}
             aiConfigured={aiConfigured}

@@ -46,8 +46,7 @@ export default function Page() {
             </Button>
           </div>
           <span className="landing-note">
-            <ShieldCheck size={15} /> Read-only. No signatures. No automated
-            trades.
+            <ShieldCheck size={15} /> Explore in demo or confirm spot purchases with your wallet.
           </span>
         </div>
         <div className="landing-visual">

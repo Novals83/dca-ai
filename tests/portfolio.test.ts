@@ -64,13 +64,13 @@ it("parses numeric strings explicitly and rejects empty or nonfinite values", ()
   expect(perpSchema.parse(perp)).toEqual(perp);
 });
 
-it("rejects unsupported unified account before combining balances", async () => {
+it("rejects unsupported portfolio margin before combining balances", async () => {
   const { vi } = await import("vitest");
   const { getPortfolio } = await import("../lib/hyperliquid/portfolio");
   const mock = vi
     .fn()
     .mockResolvedValue(
-      new Response(JSON.stringify("unifiedAccount"), { status: 200 }),
+      new Response(JSON.stringify("portfolioMargin"), { status: 200 }),
     );
   vi.stubGlobal("fetch", mock);
   try {
@@ -81,4 +81,17 @@ it("rejects unsupported unified account before combining balances", async () => 
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+it("counts unified collateral once and caps available USDC", () => {
+ const p = normalizePortfolio("x", perp, {balances:[{coin:"USDC",token:0,total:350,hold:20},{coin:"HYPE",token:150,total:1,hold:0}],tokenToAvailableAfterMaintenance:[[0,300]]}, meta, {"@107":40}, "unifiedAccount");
+ expect(p.accountValue).toBe(390);
+ expect(p.withdrawable).toBe(300);
+ expect(p.btcExposure).toBe(-2000);
+ expect(p.hypeExposure).toBe(40);
+});
+it("does not substitute per-DEX withdrawable for missing unified availability", () => {
+ const p = normalizePortfolio("x", perp, {balances:[{coin:"USDC",token:0,total:350,hold:0}]}, meta, {}, "unifiedAccount");
+ expect(p.accountValue).toBe(350); expect(p.withdrawable).toBe(0);
+ expect(p.warnings.join(" ")).toContain("unavailable");
 });

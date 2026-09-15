@@ -3,18 +3,21 @@ import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, ArrowUp, ChevronRight, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, type VoiceState } from "./avatar";
+import type { DCADraft } from "@/lib/dca/draft";
 import type { Strategy } from "@/lib/dca/simulator";
 import type { CopilotReply } from "@/lib/ai/copilot";
 import { LiveVoiceProvider, type Transcript } from "@/lib/voice/provider";
 export function CopilotPanel({
   account,
   strategy,
+  onDcaDraft,
   onPreview,
   onClose,
   aiConfigured,
 }: {
   account: string;
   strategy: Strategy;
+  onDcaDraft: (draft: DCADraft) => void;
   onPreview: (s: Strategy) => void;
   onClose: () => void;
   aiConfigured: boolean;
@@ -28,10 +31,10 @@ export function CopilotPanel({
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState<Transcript[]>([]);
   const voice = useRef<LiveVoiceProvider | null>(null);
-  const latest = useRef({ account, strategy, onPreview });
+  const latest = useRef({ account, strategy, onPreview, onDcaDraft });
   useEffect(() => {
-    latest.current = { account, strategy, onPreview };
-  }, [account, strategy, onPreview]);
+    latest.current = { account, strategy, onPreview, onDcaDraft };
+  }, [account, strategy, onPreview, onDcaDraft]);
   useEffect(() => () => voice.current?.dispose(), []);
   async function ask(message: string) {
     if (busy || !message.trim()) return;
@@ -62,6 +65,7 @@ export function CopilotPanel({
         { role: "assistant", content: result.text, provider: result.provider },
       ]);
       if (result.preview) onPreview(result.preview);
+      if (result.dcaDraft) onDcaDraft(result.dcaDraft);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Copilot unavailable. Try again.",
@@ -94,6 +98,7 @@ export function CopilotPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             account: state.account,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             strategy: state.strategy,
             message:
               "Respond to the latest request in this voice transcript. It may contain overlapping fragments: " +
@@ -108,6 +113,7 @@ export function CopilotPanel({
         if (!response.ok)
           return "The calculation service is unavailable. Please use the strategy builder.";
         if (result.preview && isCurrent()) state.onPreview(result.preview);
+        if (result.dcaDraft && isCurrent()) state.onDcaDraft(result.dcaDraft);
         return result.text;
       },
     });
@@ -133,7 +139,7 @@ export function CopilotPanel({
       </div>
       <div className="copilot-status">
         <i />
-        {aiConfigured ? "AI CONNECTED" : "LOCAL TOOLS · NO API KEY"}
+        {aiConfigured ? "AI CONFIGURED" : "LOCAL TOOLS · NO API KEY"}
       </div>
       <div className="chat-scroll" aria-live="polite">
         {messages.length === 0 ? (
@@ -169,7 +175,7 @@ export function CopilotPanel({
               <br />
               <small>
                 {account === "demo"
-                  ? "Using clearly labeled demo data"
+                  ? "Demo balances · live market prices"
                   : "Read-only Hyperliquid account data"}
               </small>
             </div>
